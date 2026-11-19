@@ -1,0 +1,233 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\usepackage[backend=biber]{biblatex}
+\bibliography{referencias}
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+
+% Definiciones para la portada solicitada
+\def \unidad{Escuela de Ingeniería en Electrónica \\ Centro Académico de Alajuela}
+\def \programa{Ingeniería Electrónica}
+\def \curso{EL5409 - Laboratorio de Control Automático}
+\def \titulo{Sistema de Seguimiento Infrarrojo: ``El Girasol''}
+
+\def \autores{
+    Anthony Artavia Salazar\\
+    asanthony15@estudiantec.cr\\
+    2020036546\\
+    
+    \vspace{0.4cm}
+    
+    Kevin Joseph Berrocal Rodríguez\\
+    kjosephbr@estudiantec.cr\\
+    2020113094\\
+    
+    \vspace{0.4cm}
+    
+    José David Luna Herrera\\
+    josedavidlh@estudiantec.cr\\
+    2020114728\\
+    
+    \vspace{0.4cm}
+    
+    William Andrés Sánchez Ramírez\\
+    william.a.sr@estudiantec.cr\\
+    2018235622\\
+    
+    \vspace{0.4cm}
+    
+    Luis Pablo Vargas Muñoz\\
+    pablovargas@estudiantec.cr\\
+    2021490483
+}
+
+\def \fecha{Octubre 2026}
+\def \lugar{Alajuela, Costa Rica}
+
+\begin{document}
+
+% Portada del documento
+\begin{titlepage}
+    \begin{center}
+        \vspace*{0.8cm}
+        
+        % Espacio reservado para el logotipo del TEC
+        \includegraphics[width=0.7\linewidth]{Figuras/logo_tec.png}\\
+        \vspace{0.5cm}
+        \Large
+        \unidad\\
+        \vspace{0.2cm}
+        \programa\\
+        \vspace{0.2cm}
+        \curso
+        
+        \vspace{0.8cm}
+        \LARGE
+        \textbf{\titulo}
+            
+        \vspace{0.8cm}
+        \large
+        \autores
+            
+        \vfill
+        
+        \lugar\\
+        \fecha
+        
+    \end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\begin{abstract}
+Este informe presenta el modelado matemático, diseño y propuesta de implementación de un sistema de seguimiento de luz infrarroja de dos grados de libertad, correspondiente al proyecto ``El Girasol''. El sistema utiliza un arreglo óptico de cuatro fototransistores para estimar el error de orientación y dos servomotores inteligentes Dynamixel AX-12A controlados mediante una placa ArbotiX-M para orientar el cabezal sensor de manera autónoma e inalámbrica. Se detallan el modelo de percepción, el modelado dinámico de los actuadores como sistemas de segundo orden, la formulación en espacio de estados y la estructura de un controlador proporcional incremental con banda muerta.
+\end{abstract}
+
+\section{Introducción}
+El control automático de sistemas orientables es fundamental en aplicaciones de seguimiento y robótica móvil. El proyecto ``El Girasol'' plantea el diseño de un sistema autónomo capaz de detectar y rastrear una fuente de luz infrarroja dentro de su esfera de operación utilizando un kit Dynamixel y un controlador ArbotiX-M con alimentación independiente por batería.
+
+\section{Objetivos}
+\subsection{Objetivo General}
+Diseñar, modelar e implementar un sistema de control de dos grados de libertad capaz de ubicar y seguir una fuente de luz infrarroja mediante un arreglo de fototransistores y servomotores Dynamixel AX-12A.
+
+\subsection{Objetivos Específicos}
+\begin{itemize}
+    \item Desarrollar el modelo matemático del arreglo de fototransistores para la estimación de los errores angulares horizontal y vertical.
+    \item Obtener el modelo dinámico de los servomotores como un sistema de segundo orden equivalente.
+    \item Implementar el análisis de estabilidad y desempeño del sistema.
+    \item Diseñar un controlador digital para el seguimiento robusto ante movimientos de la fuente de luz.
+\end{itemize}
+
+\section{Marco Teórico}
+El diseño de sistemas de seguimiento óptico y control de posición requiere la integración de principios de optoelectrónica, modelado de sistemas dinámicos y control digital por retroalimentación. A continuación se detallan los fundamentos teóricos que respaldan el desarrollo del proyecto.
+
+\subsection{Sistemas de Percepción Óptica y Normalización de Señales}
+Los sistemas orientados a la detección de fuentes luminosas suelen emplear arreglos diferenciales de dispositivos optoelectrónicos, tales como fototransistores o fotodiodos. Debido a las tolerancias de fabricación y a las variaciones en la distancia respecto a la fuente, las señales eléctricas crudas $V_i(t)$ se ven afectadas por la intensidad absoluta y la ganancia individual de cada sensor. Para mitigar esto, se implementa una normalización lineal que acota las lecturas entre $0$ y $1$ \cite{dorf2016modern}. La estimación del error angular diferencial mediante sumas cruzadas de cuadrantes permite obtener una medida normalizada independiente de la intensidad lumínica global de la fuente, aproximándose de manera lineal a la desviación angular real en las cercanías del punto de equilibrio \cite{ogata2010modern}.
+
+\subsection{Modelado Dinámico de Servomotores de Posición}
+Los servomotores inteligentes, como los actuadores Dynamixel AX-12A, integran un lazo cerrado de control de posición interno a nivel de hardware. Desde la perspectiva de la teoría de control clásico, cuando se comandan a través de un controlador externo (como la placa ArbotiX-M), la relación entre la posición objetivo $u(t)$ y la posición real $\theta(t)$ puede aproximarse satisfactoriamente mediante una función de transferencia de segundo orden subamortiguada \cite{franklin2015feedback}. Este modelo captura de manera adecuada la ganancia estática, el tiempo de establecimiento y las oscilaciones o sobreimpulso característicos de la respuesta dinámica del motor y su carga mecánica asociada.
+
+\subsection{Representación en Espacio de Estados}
+Para sistemas multivariable o que requieren un análisis avanzado de estabilidad y control moderno, la representación en espacio de estados proporciona un marco matemático riguroso. Un sistema de segundo orden continuo se describe mediante un vector de estados $\mathbf{x}(t) = [\theta(t) \quad \dot{\theta}(t)]^T$, relacionando las derivadas de las variables físicas con las entradas de control y las salidas del sistema a través de las matrices de estado $\mathbf{A}$, $\mathbf{B}$, $\mathbf{C}$ y $\mathbf{D}$ \cite{katsuhiko2010ingenieria}.
+
+\subsection{Control Proporcional Incremental y Banda Muerta}
+En aplicaciones de seguimiento en tiempo real con fuentes móviles, un controlador proporcional (P) incremental resulta ventajoso porque calcula correcciones sobre la posición objetivo actual en lugar de requerir una referencia absoluta constante. Sin embargo, los sistemas físicos discretos sujetos a ruido eléctrico en los sensores sufren de vibraciones o desgaste mecánico por microcorrecciones continuas. Para solucionar esto, se implementa una función de \emph{banda muerta} (dead zone), la cual inhibe la acción de control cuando el error absoluto se encuentra por debajo de un umbral predefinido $\delta$, garantizando la estabilidad en el estado estacionario \cite{astrom2008feedback}.
+
+\section{Descripción del Sistema Físico}
+El sistema de seguimiento infrarrojo ``El Girasol'' está constituido por un arreglo mecatrónico de dos grados de libertad diseñado para operar de manera autónoma e inalámbrica mediante alimentación por batería. La arquitectura del sistema se divide en tres subsistemas principales:
+
+\begin{itemize}
+    \item \textbf{Subsistema de Percepción Óptica:} Consiste en un arreglo simétrico de cuatro fototransistores ($S_1$ a $S_4$) montados sobre el cabezal sensor. Esta disposición permite captar la intensidad lumínica desde distintos ángulos frontales y generar las señales analógicas necesarias para estimar el error direccional respecto a la fuente infrarroja.
+    \item \textbf{Subsistema de Actuación (Planta Mecánica):} Está compuesto por dos servomotores inteligentes Dynamixel AX-12A acoplados ortogonalmente. El primer motor controla el giro horizontal (azimut o base), mientras que el segundo motor gestiona la inclinación vertical (elevación del cabezal). Estos motores integran un controlador interno de posición y retroalimentación de estado.
+    \item \textbf{Subsistema de Control Digital:} Emplea una tarjeta controladora ArbotiX-M, encargada de leer las señales eléctricas de los fototransistores, ejecutar los algoritmos de control digital y enviar los comandos de posición objetivo hacia los servomotores de manera síncrona.
+\end{itemize}
+
+\section{Nomenclatura y Glosario de Variables}
+Para facilitar la lectura y comprensión del modelado matemático desarrollado en este informe, a continuación se definen los símbolos y variables principales utilizados:
+
+\begin{itemize}
+    \item $\theta_x, \theta_y$: Ángulo de giro horizontal (azimut) y ángulo de inclinación vertical (elevación) $[\text{rad}]$.
+    \item $u_x, u_y$: Comandos o posiciones objetivo enviadas a los ejes horizontal y vertical $[\text{rad}]$.
+    \item $V_i(t)$: Tensión eléctrica medida en el fototransistores $i$-ésimo ($i = 1, 2, 3, 4$) $[\text{V}]$.
+    \item $S_i(t)$: Señal eléctrica normalizada del fototransistor $i$-ésimo [adim.].
+    \item $S_L, S_R, S_U, S_D$: Sumas de iluminación normalizada para los cuadrantes izquierdo, derecho, superior e inferior [adim.].
+    \item $e_x, e_y$: Errores de orientación horizontal y vertical estimados [adim. o rad].
+    \item $\varepsilon$: Constante positiva pequeña para evitar divisiones entre cero [adim.].
+    \item $K_{sx}, K_{sy}$: Sensibilidades angulares horizontal y vertical del arreglo óptico $[\text{rad}^{-1}]$.
+    \item $\Delta\theta_x, \Delta\theta_y$: Desviaciones angulares respecto a la fuente infrarroja $[\text{rad}]$.
+    \item $G_x(s), G_y(s)$: Funciones de transferencia equivalentes de segundo orden para los ejes horizontal y vertical.
+    \item $K_x, K_y$: Ganancias estáticas de los servomotores [adim.].
+    \item $\omega_{nx}, \omega_{ny}$: Frecuencias naturales de los ejes horizontal y vertical $[\text{rad/s}]$.
+    \item $\zeta_x, \zeta_y$: Coeficientes de amortiguamiento equivalentes [adim.].
+    \item $\Theta_x(s), \Theta_y(s)$: Posiciones angulares reales en el dominio de Laplace $[\text{rad}]$.
+    \item $U_x(s), U_y(s)$: Comandos de posición en el dominio de Laplace $[\text{rad}]$.
+    \item $\theta_{x,r}, \theta_{y,r}$: Posiciones de referencia actualizadas para los motores $[\text{rad}]$.
+    \item $K_{px}, K_{py}$: Ganancias proporcionales del controlador digital incremental [adim.].
+    \item $\delta_x, \delta_y$: Umbrales de banda muerta para los errores ópticos [adim.].
+    \item $\mathbf{x}, \dot{\mathbf{x}}$: Vector de estados del sistema y su derivada temporal.
+\end{itemize}
+
+\section{Modelado del Sistema}
+
+\subsection{Definición de Variables y Coordenadas}
+El sistema opera sobre dos ejes angulares principales:
+\begin{itemize}
+    \item $\theta_x$: Ángulo de giro horizontal (azimut) en radianes.
+    \item $\theta_y$: Ángulo de inclinación vertical (elevación) en radianes.
+    \item $u_x, u_y$: Comandos de posición objetivo para los ejes horizontal y vertical.
+\end{itemize}
+
+\subsection{Modelo de Percepción (Arreglo de Fototransistores)}
+Se emplea un arreglo de cuatro fototransistores ($S_1$: Superior Izquierdo, $S_2$: Superior Derecho, $S_3$: Inferior Izquierdo, $S_4$: Inferior Derecho). Las señales eléctricas normalizadas $S_i(t) \in [0, 1]$ se obtienen mediante:
+\begin{equation}
+S_i(t) = \frac{V_i(t) - V_{i,\min}}{V_{i,\max} - V_{i,\min}}
+\end{equation}
+
+A partir de las sumas de iluminación por cuadrantes ($S_L, S_R, S_U, S_D$), los errores normalizados se definen como:
+\begin{align}
+e_x &= \frac{S_L - S_R}{S_L + S_R + \varepsilon} \\
+e_y &= \frac{S_U - S_D}{S_U + S_D + \varepsilon}
+\end{align}
+donde $\varepsilon$ es una constante positiva pequeña para evitar divisiones entre cero. La relación lineal aproximada con respecto a la desviación angular es:
+\begin{equation}
+e_x \approx K_{sx}\Delta\theta_x, \quad e_y \approx K_{sy}\Delta\theta_y
+\end{equation}
+
+\subsection{Modelado Dinámico de los Servomotores (Planta)}
+Debido a que los servomotores AX-12A integran un controlador interno de posición, cada eje se modela como un sistema de segundo orden equivalente:
+\begin{align}
+G_x(s) &= \frac{\Theta_x(s)}{U_x(s)} = \frac{K_x\omega_{nx}^2}{s^2 + 2\zeta_x\omega_{nx}s + \omega_{nx}^2} \\
+G_y(s) &= \frac{\Theta_y(s)}{U_y(s)} = \frac{K_y\omega_{ny}^2}{s^2 + 2\zeta_y\omega_{ny}s + \omega_{ny}^2}
+\end{align}
+En forma matricial para ambos ejes desacoplados:
+\begin{equation}
+\begin{bmatrix} \Theta_x(s)\\ \Theta_y(s) \end{bmatrix} = \begin{bmatrix} G_x(s)&0\\ 0&G_y(s) \end{bmatrix} \begin{bmatrix} U_x(s)\\ U_y(s) \end{bmatrix}
+\end{equation}
+
+\subsection{Modelo del Controlador y Banda Muerta}
+Se propone un controlador proporcional incremental para actualizar la posición objetivo de forma continua:
+\begin{align}
+\theta_{x,r}(k+1) &= \theta_{x,r}(k) + K_{px}e_x^*(k) \\
+\theta_{y,r}(k+1) &= \theta_{y,r}(k) + K_{py}e_y^*(k)
+\end{align}
+incorporando una banda muerta con umbrales $\delta_x$ y $\delta_y$ para evitar oscilaciones innecesarias ante ruido de lectura:
+\begin{equation}
+e_x^* = \begin{cases} 0 & |e_x| \leq \delta_x \\ e_x & |e_x| > \delta_x \end{cases}
+\end{equation}
+
+\subsection{Modelo en Espacio de Estados}
+Definiendo las variables de estado para el eje horizontal como $x_1 = \theta_x$ y $x_2 = \dot{\theta}_x$:
+\begin{align}
+\dot{\mathbf{x}} &= \begin{bmatrix} 0 & 1 \\ -\omega_{nx}^2 & -2\zeta_x\omega_{nx} \end{bmatrix} \mathbf{x} + \begin{bmatrix} 0 \\ K_x\omega_{nx}^2 \end{bmatrix} u_x \\
+y_x &= \begin{bmatrix} 1 & 0 \end{bmatrix} \mathbf{x}
+\end{align}
+
+\section{Metodología de Identificación Experimental}
+Para validar el modelo teórico, se proponen las siguientes pruebas en el laboratorio:
+\begin{enumerate}
+    \item \textbf{Respuesta al Escalón:} Aplicar escalones de posición a los motores AX-12A y registrar la curva temporal para identificar parámetros de la planta ($\omega_n$, $\zeta$ y $K$).
+    \item \textbf{Calibración Óptica:} Posicionar la fuente infrarroja en coordenadas angulares conocidas para determinar experimentalmente las sensibilidades $K_{sx}$ y $K_{sy}$.
+\end{enumerate}
+
+\subsection{Mediciones Experimentales}
+
+\subsection{Modelo Real}
+
+\section{Simulaciones}
+
+\section{Diseño e Implementación del Controlador}
+
+\section{Resultados y Análisis}
+
+\section{Conclusiones}
+
+\printbibliography
+
+\end{document}
