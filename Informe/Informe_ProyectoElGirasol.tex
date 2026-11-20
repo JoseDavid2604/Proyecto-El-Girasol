@@ -7,8 +7,8 @@
 \usepackage{float}
 \usepackage{booktabs}
 \usepackage[hidelinks]{hyperref}
-\usepackage[backend=biber]{biblatex}
-\bibliography{referencias}
+\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+\addbibresource{referencias.bib} % Tu archivo .bib
 \geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
 
 % Definiciones para la portada solicitada
@@ -106,7 +106,7 @@ Diseñar, modelar e implementar un sistema de control de dos grados de libertad 
 \end{itemize}
 
 \section{Marco Teórico}
-El diseño de sistemas de seguimiento óptico y control de posición requiere la integración de principios de optoelectrónica, modelado de sistemas dinámicos y control digital por retroalimentación. A continuación se detallan los fundamentos teóricos que respaldan el desarrollo del proyecto.
+El diseño de sistemas de seguimiento óptico y control de posición requiere la integración de principios de optoelectrónica, modelado de sistemas dinámicos y control digital por retroalimentación. A continuación, se detallan los fundamentos teóricos que respaldan el desarrollo del proyecto.
 
 \subsection{Sistemas de Percepción Óptica y Normalización de Señales}
 Los sistemas orientados a la detección de fuentes luminosas suelen emplear arreglos diferenciales de dispositivos optoelectrónicos, tales como fototransistores o fotodiodos. Debido a las tolerancias de fabricación y a las variaciones en la distancia respecto a la fuente, las señales eléctricas crudas $V_i(t)$ se ven afectadas por la intensidad absoluta y la ganancia individual de cada sensor. Para mitigar esto, se implementa una normalización lineal que acota las lecturas entre $0$ y $1$ \cite{dorf2016modern}. La estimación del error angular diferencial mediante sumas cruzadas de cuadrantes permite obtener una medida normalizada independiente de la intensidad lumínica global de la fuente, aproximándose de manera lineal a la desviación angular real en las cercanías del punto de equilibrio \cite{ogata2010modern}.
@@ -115,7 +115,7 @@ Los sistemas orientados a la detección de fuentes luminosas suelen emplear arre
 Los servomotores inteligentes, como los actuadores Dynamixel AX-12A, integran un lazo cerrado de control de posición interno a nivel de hardware. Desde la perspectiva de la teoría de control clásico, cuando se comandan a través de un controlador externo (como la placa ArbotiX-M), la relación entre la posición objetivo $u(t)$ y la posición real $\theta(t)$ puede aproximarse satisfactoriamente mediante una función de transferencia de segundo orden subamortiguada \cite{franklin2015feedback}. Este modelo captura de manera adecuada la ganancia estática, el tiempo de establecimiento y las oscilaciones o sobreimpulso característicos de la respuesta dinámica del motor y su carga mecánica asociada.
 
 \subsection{Representación en Espacio de Estados}
-Para sistemas multivariable o que requieren un análisis avanzado de estabilidad y control moderno, la representación en espacio de estados proporciona un marco matemático riguroso. Un sistema de segundo orden continuo se describe mediante un vector de estados $\mathbf{x}(t) = [\theta(t) \quad \dot{\theta}(t)]^T$, relacionando las derivadas de las variables físicas con las entradas de control y las salidas del sistema a través de las matrices de estado $\mathbf{A}$, $\mathbf{B}$, $\mathbf{C}$ y $\mathbf{D}$ \cite{katsuhiko2010ingenieria}.
+Para sistemas multivariable o que requieren un análisis avanzado de estabilidad y control moderno, la representación en espacio de estados proporciona un marco matemático riguroso. Un sistema de segundo orden continuo se describe mediante un vector de estados $\mathbf{x}(t) = [\theta(t) \quad \dot{\theta}(t)]^T$, relacionando las derivadas de las variables físicas con las entradas de control y las salidas del sistema a través de las matrices de estado $\mathbf{A}$, $\mathbf{B}$, $\mathbf{C}$ y $\mathbf{D}$ \cite{ogata2010modern}.
 
 \subsection{Control Proporcional Incremental y Banda Muerta}
 En aplicaciones de seguimiento en tiempo real con fuentes móviles, un controlador proporcional (P) incremental resulta ventajoso porque calcula correcciones sobre la posición objetivo actual en lugar de requerir una referencia absoluta constante. Sin embargo, los sistemas físicos discretos sujetos a ruido eléctrico en los sensores sufren de vibraciones o desgaste mecánico por microcorrecciones continuas. Para solucionar esto, se implementa una función de \emph{banda muerta} (dead zone), la cual inhibe la acción de control cuando el error absoluto se encuentra por debajo de un umbral predefinido $\delta$, garantizando la estabilidad en el estado estacionario \cite{astrom2008feedback}.
@@ -164,6 +164,17 @@ El sistema opera sobre dos ejes angulares principales:
     \item $u_x, u_y$: Comandos de posición objetivo para los ejes horizontal y vertical.
 \end{itemize}
 
+\subsection{Modelado Dinámico de los Servomotores (Planta)}
+Debido a que los servomotores AX-12A integran un controlador interno de posición, cada eje se modela como un sistema de segundo orden equivalente:
+\begin{align}
+G_x(s) &= \frac{\Theta_x(s)}{U_x(s)} = \frac{K_x\omega_{nx}^2}{s^2 + 2\zeta_x\omega_{nx}s + \omega_{nx}^2} \\
+G_y(s) &= \frac{\Theta_y(s)}{U_y(s)} = \frac{K_y\omega_{ny}^2}{s^2 + 2\zeta_y\omega_{ny}s + \omega_{ny}^2}
+\end{align}
+En forma matricial para ambos ejes desacoplados:
+\begin{equation}
+\begin{bmatrix} \Theta_x(s)\\ \Theta_y(s) \end{bmatrix} = \begin{bmatrix} G_x(s)&0\\ 0&G_y(s) \end{bmatrix} \begin{bmatrix} U_x(s)\\ U_y(s) \end{bmatrix}
+\end{equation}
+
 \subsection{Modelo de Percepción (Arreglo de Fototransistores)}
 Se emplea un arreglo de cuatro fototransistores ($S_1$: Superior Izquierdo, $S_2$: Superior Derecho, $S_3$: Inferior Izquierdo, $S_4$: Inferior Derecho). Las señales eléctricas normalizadas $S_i(t) \in [0, 1]$ se obtienen mediante:
 \begin{equation}
@@ -178,17 +189,6 @@ e_y &= \frac{S_U - S_D}{S_U + S_D + \varepsilon}
 donde $\varepsilon$ es una constante positiva pequeña para evitar divisiones entre cero. La relación lineal aproximada con respecto a la desviación angular es:
 \begin{equation}
 e_x \approx K_{sx}\Delta\theta_x, \quad e_y \approx K_{sy}\Delta\theta_y
-\end{equation}
-
-\subsection{Modelado Dinámico de los Servomotores (Planta)}
-Debido a que los servomotores AX-12A integran un controlador interno de posición, cada eje se modela como un sistema de segundo orden equivalente:
-\begin{align}
-G_x(s) &= \frac{\Theta_x(s)}{U_x(s)} = \frac{K_x\omega_{nx}^2}{s^2 + 2\zeta_x\omega_{nx}s + \omega_{nx}^2} \\
-G_y(s) &= \frac{\Theta_y(s)}{U_y(s)} = \frac{K_y\omega_{ny}^2}{s^2 + 2\zeta_y\omega_{ny}s + \omega_{ny}^2}
-\end{align}
-En forma matricial para ambos ejes desacoplados:
-\begin{equation}
-\begin{bmatrix} \Theta_x(s)\\ \Theta_y(s) \end{bmatrix} = \begin{bmatrix} G_x(s)&0\\ 0&G_y(s) \end{bmatrix} \begin{bmatrix} U_x(s)\\ U_y(s) \end{bmatrix}
 \end{equation}
 
 \subsection{Modelo del Controlador y Banda Muerta}
@@ -218,7 +218,109 @@ Para validar el modelo teórico, se proponen las siguientes pruebas en el labora
 
 \subsection{Mediciones Experimentales}
 
+Para caracterizar experimentalmente el comportamiento de los servomotores Dynamixel AX-12A en ambos grados de libertad (eje horizontal o \emph{Pan} y eje vertical o \emph{Tilt}), se ejecutó una rutina de adquisición de datos implementada en C++ mediante el entorno Arduino IDE sobre la tarjeta ArbotiX-M. El experimento consistió en aplicar cuatro entradas tipo escalón correspondientes a cambios de posición angular de aproximadamente $\pm 100$ pasos digitales (donde cada unidad equivale a $\approx 0.29^\circ$ dentro del rango de $0$ a $1023$ del servomotor), registrando la posición real reportada por la retroalimentación interna cada $50\text{ ms}$ durante un intervalo de $500\text{ ms}$ por prueba.
+
+Los datos capturados fueron exportados en formato CSV para su posterior procesamiento numérico en MATLAB. Cada registro experimental se estructuró en cinco campos fundamentales:
+\begin{itemize}
+    \item \texttt{prueba}: Identificador numérico del ensayo realizado ($1$ a $4$), representando cada transición escalón.
+    \item \texttt{tiempo\_ms}: Instante de muestreo transcurrido desde la aplicación del comando de referencia, con resolución de $50\text{ ms}$.
+    \item \texttt{posicion\_inicial}: Lectura digital del motor en el instante previo al cambio de consigna.
+    \item \texttt{posicion\_objetivo}: Valor de referencia enviado como entrada escalón al controlador interno del actuador.
+    \item \texttt{posicion\_real}: Respuesta angular instantánea medida por el potenciómetro interno del servomotor.
+\end{itemize}
+
+A modo ilustrativo, en el Cuadro~\ref{tab:muestra_csv} se presenta un extracto representativo de los datos recolectados durante la primera prueba del eje horizontal (\emph{Pan}), donde se evidencia el sobreimpulso transitorio alrededor de los $150\text{ ms}$ y su posterior estabilización cerca de los $300\text{ ms}$.
+
+\begin{table}[H]
+    \centering
+    \caption{Extracto de mediciones experimentales de respuesta al escalón para el eje \emph{Pan} (Prueba 1).}
+    \label{tab:muestra_csv}
+    \begin{tabular}{ccccc}
+        \toprule
+        \textbf{Prueba} & \textbf{Tiempo $[\text{ms}]$} & \textbf{Posición Inicial} & \textbf{Posición Objetivo} & \textbf{Posición Real} \\
+        \midrule
+        1 & 50  & 412 & 512 & 457 \\
+        1 & 100 & 412 & 512 & 512 \\
+        1 & 150 & 412 & 512 & 528 \\
+        1 & 200 & 412 & 512 & 511 \\
+        1 & 250 & 412 & 512 & 507 \\
+        1 & 300 & 412 & 512 & 510 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Las respuestas temporales obtenidas a partir de los registros experimentales y sus respectivos ajustes de identificación en MATLAB se presentan en las Figuras~\ref{fig:ident_pan} y~\ref{fig:ident_tilt} para los ejes \emph{Pan} y \emph{Tilt}, respectivamente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Identificacion PAN.png}
+    \caption{Respuesta experimental y ajuste de identificación para el eje horizontal (\emph{Pan}).}
+    \label{fig:ident_pan}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Identificacion TILT.png}
+    \caption{Respuesta experimental y ajuste de identificación para el eje vertical (\emph{Tilt}).}
+    \label{fig:ident_tilt}
+\end{figure}
+
+
 \subsection{Modelo Real}
+A partir del procesamiento y ajuste de las curvas experimentales en MATLAB, se identificaron los parámetros característicos de segundo orden para ambos ejes de movimiento. En el Cuadro~\ref{tab:parametros_identificados} se resumen las constantes dinámicas obtenidas, evidenciando un comportamiento subamortiguado ($\zeta \approx 0.50$) muy consistente entre los dos servomotores.
+
+\begin{table}[H]
+    \centering
+    \caption{Parámetros dinámicos experimentales identificados en MATLAB para los ejes \emph{Pan} y \emph{Tilt}.}
+    \label{tab:parametros_identificados}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Parámetro} & \textbf{Eje Horizontal (\emph{Pan})} & \textbf{Eje Vertical (\emph{Tilt})} \\
+        \midrule
+        Ganancia estática ($K$) & $0.98669$ & $0.98970$ \\
+        Coeficiente de amortiguamiento ($\zeta$) & $0.50026$ & $0.49847$ \\
+        Frecuencia natural ($\omega_n$) & $25.31960\text{ rad/s}$ & $25.17597\text{ rad/s}$ \\
+        Frecuencia amortiguada ($\omega_d$) & $21.92364\text{ rad/s}$ & $21.82524\text{ rad/s}$ \\
+        Tiempo de establecimiento ($t_s$) & $0.31580\text{ s}$ & $0.31874\text{ s}$ \\
+        Polos dominantes ($s_{1,2}$) & $-12.6663 \pm j21.9236$ & $-12.5494 \pm j21.8252$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Sustituyendo los valores identificados en la estructura teórica de segundo orden, las funciones de transferencia experimentales de la planta en tiempo continuo quedan definidas como:
+
+\begin{align}
+G_{\text{PAN}}(s) &= \frac{\Theta_x(s)}{U_x(s)} = \frac{632.5}{s^2 + 25.33s + 641.1} \\
+G_{\text{TILT}}(s) &= \frac{\Theta_y(s)}{U_y(s)} = \frac{627.3}{s^2 + 25.10s + 633.8}
+\end{align}
+
+De manera equivalente, la representación en espacio de estados real para cada eje se obtiene sustituyendo los coeficientes numéricos en las matrices del sistema:
+
+\begin{equation}
+\dot{\mathbf{x}}_{\text{PAN}} = \begin{bmatrix} 0 & 1 \\ -641.1 & -25.33 \end{bmatrix} \mathbf{x}_{\text{PAN}} + \begin{bmatrix} 0 \\ 632.5 \end{bmatrix} u_x, \quad y_x = \begin{bmatrix} 1 & 0 \end{bmatrix} \mathbf{x}_{\text{PAN}}
+\end{equation}
+
+\begin{equation}
+\dot{\mathbf{x}}_{\text{TILT}} = \begin{bmatrix} 0 & 1 \\ -633.8 & -25.10 \end{bmatrix} \mathbf{x}_{\text{TILT}} + \begin{bmatrix} 0 \\ 627.3 \end{bmatrix} u_y, \quad y_y = \begin{bmatrix} 1 & 0 \end{bmatrix} \mathbf{x}_{\text{TILT}}
+\end{equation}
+
+A partir de la similitud dinámica observada entre ambos ejes, también es posible definir un modelo promedio general de segundo orden tomando las medias aritméticas de los parámetros identificados para \emph{Pan} y \emph{Tilt}:
+
+\begin{align}
+K_{\text{prom}} &= 0.988195 \\
+\zeta_{\text{prom}} &= 0.499365 \\
+\omega_{n,\text{prom}} &= 25.247785\text{ rad/s}
+\end{align}
+
+De este modo, se obtiene la función de transferencia generalizada para los servomotores:
+
+\begin{equation}
+\boxed{
+G(s) = \frac{629.7}{s^2 + 25.22s + 637.4}
+}
+\end{equation}
+
+Este modelo unificado resulta práctico para realizar análisis preliminares y diseños de control base antes de ajustar o refinar cada eje por separado.
 
 \section{Simulaciones}
 
@@ -228,6 +330,6 @@ Para validar el modelo teórico, se proponen las siguientes pruebas en el labora
 
 \section{Conclusiones}
 
-\printbibliography
+\printbibliography[title={Bibliografía},heading=bibintoc]
 
 \end{document}
