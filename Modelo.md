@@ -1,4 +1,4 @@
-# Modelo Matemático y Simulaciones – El Girasol
+#  Modelo Matemático y Simulaciones – El Girasol
 
 ## 1. Modelo del sistema
 
@@ -18,19 +18,15 @@ La planta mecánica está compuesta por dos servomotores inteligentes **DYNAMIXE
 
 ## 2. Modelado dinámico de los servomotores
 
-Cada eje se representa mediante una función de transferencia de segundo orden:
+Cada eje se representa mediante una función de transferencia de segundo orden.
 
-$$
-G_x(s)=\frac{\Theta_x(s)}{U_x(s)}
-=\frac{K_x\omega_{nx}^{2}}
-{s^2+2\zeta_x\omega_{nx}s+\omega_{nx}^{2}}
-$$
+### 2.1. Modelo general del eje horizontal
 
-$$
-G_y(s)=\frac{\Theta_y(s)}{U_y(s)}
-=\frac{K_y\omega_{ny}^{2}}
-{s^2+2\zeta_y\omega_{ny}s+\omega_{ny}^{2}}
-$$
+$$G_x(s)=\frac{\Theta_x(s)}{U_x(s)}=\frac{K_x\omega_{nx}^{2}}{s^2+2\zeta_x\omega_{nx}s+\omega_{nx}^{2}}$$
+
+### 2.2. Modelo general del eje vertical
+
+$$G_y(s)=\frac{\Theta_y(s)}{U_y(s)}=\frac{K_y\omega_{ny}^{2}}{s^2+2\zeta_y\omega_{ny}s+\omega_{ny}^{2}}$$
 
 Donde:
 
@@ -42,21 +38,7 @@ Donde:
 
 Para ambos ejes, el modelo matricial desacoplado se expresa como:
 
-$$
-\begin{bmatrix}
-\Theta_x(s)\\
-\Theta_y(s)
-\end{bmatrix}
-=
-\begin{bmatrix}
-G_x(s)&0\\
-0&G_y(s)
-\end{bmatrix}
-\begin{bmatrix}
-U_x(s)\\
-U_y(s)
-\end{bmatrix}
-$$
+$$\begin{bmatrix}\Theta_x(s)\\\Theta_y(s)\end{bmatrix}=\begin{bmatrix}G_x(s)&0\\0&G_y(s)\end{bmatrix}\begin{bmatrix}U_x(s)\\U_y(s)\end{bmatrix}$$
 
 ## 3. Funciones de transferencia identificadas experimentalmente
 
@@ -64,30 +46,17 @@ A partir de las mediciones de respuesta al escalón de los servomotores DYNAMIXE
 
 ### 3.1. Eje horizontal – PAN
 
-$$
-G_{PAN}(s)=
-\frac{\Theta_x(s)}{U_x(s)}
-=
-\frac{632.5}{s^2+25.33s+641.1}
-$$
+$$G_{PAN}(s)=\frac{\Theta_x(s)}{U_x(s)}=\frac{632.5}{s^2+25.33s+641.1}$$
 
 ### 3.2. Eje vertical – TILT
 
-$$
-G_{TILT}(s)=
-\frac{\Theta_y(s)}{U_y(s)}
-=
-\frac{627.3}{s^2+25.10s+633.8}
-$$
+$$G_{TILT}(s)=\frac{\Theta_y(s)}{U_y(s)}=\frac{627.3}{s^2+25.10s+633.8}$$
 
 ### 3.3. Modelo promedio de los actuadores
 
 Debido a la similitud dinámica observada entre ambos ejes, se obtiene un modelo promedio para realizar análisis preliminares:
 
-$$
-G(s)=
-\frac{629.7}{s^2+25.22s+637.4}
-$$
+$$G(s)=\frac{629.7}{s^2+25.22s+637.4}$$
 
 Este modelo unificado resulta práctico para realizar análisis preliminares y diseños de control base antes de ajustar o refinar cada eje por separado.
 
@@ -121,57 +90,33 @@ La distribución de los sensores es:
 
 Las señales eléctricas medidas se representan mediante $V_i(t)$ y se normalizan utilizando:
 
-$$
-S_i(t)=
-\frac{V_i(t)-V_{i,\min}}
-{V_{i,\max}-V_{i,\min}}
-$$
+$$S_i(t)=\frac{V_i(t)-V_{i,\min}}{V_{i,\max}-V_{i,\min}}$$
 
 Donde $S_i(t)$ representa la señal normalizada de cada fototransistor.
 
 A partir de las sumas de iluminación por cuadrantes se definen:
 
-$$
-S_L=S_1+S_3
-$$
+$$S_L=S_1+S_3$$
 
-$$
-S_R=S_2+S_4
-$$
+$$S_R=S_2+S_4$$
 
-$$
-S_U=S_1+S_2
-$$
+$$S_U=S_1+S_2$$
 
-$$
-S_D=S_3+S_4
-$$
+$$S_D=S_3+S_4$$
 
 Los errores normalizados de orientación se calculan mediante:
 
-$$
-e_x=
-\frac{S_L-S_R}
-{S_L+S_R+\varepsilon}
-$$
+$$e_x=\frac{S_L-S_R}{S_L+S_R+\varepsilon}$$
 
-$$
-e_y=
-\frac{S_U-S_D}
-{S_U+S_D+\varepsilon}
-$$
+$$e_y=\frac{S_U-S_D}{S_U+S_D+\varepsilon}$$
 
 Donde $\varepsilon$ es una constante positiva pequeña que evita divisiones entre cero.
 
 La relación lineal aproximada entre los errores ópticos y las desviaciones angulares se expresa como:
 
-$$
-e_x\approx K_{sx}\Delta\theta_x
-$$
+$$e_x\approx K_{sx}\Delta\theta_x$$
 
-$$
-e_y\approx K_{sy}\Delta\theta_y
-$$
+$$e_y\approx K_{sy}\Delta\theta_y$$
 
 Donde $K_{sx}$ y $K_{sy}$ representan las sensibilidades angulares del arreglo óptico.
 
@@ -181,15 +126,9 @@ Se propone un controlador proporcional incremental para actualizar continuamente
 
 Las ecuaciones de actualización son:
 
-$$
-\theta_{x,r}(k+1)=
-\theta_{x,r}(k)+K_{px}e_x^*(k)
-$$
+$$\theta_{x,r}(k+1)=\theta_{x,r}(k)+K_{px}e_x^*(k)$$
 
-$$
-\theta_{y,r}(k+1)=
-\theta_{y,r}(k)+K_{py}e_y^*(k)
-$$
+$$\theta_{y,r}(k+1)=\theta_{y,r}(k)+K_{py}e_y^*(k)$$
 
 Donde:
 
@@ -201,23 +140,11 @@ Donde:
 
 La banda muerta se define para el eje horizontal como:
 
-$$
-e_x^*=
-\begin{cases}
-0, & |e_x|\leq\delta_x\\
-e_x, & |e_x|>\delta_x
-\end{cases}
-$$
+$$e_x^*=\begin{cases}0,&|e_x|\leq\delta_x\\e_x,&|e_x|>\delta_x\end{cases}$$
 
 Para el eje vertical se utiliza de manera equivalente el umbral $\delta_y$:
 
-$$
-e_y^*=
-\begin{cases}
-0, & |e_y|\leq\delta_y\\
-e_y, & |e_y|>\delta_y
-\end{cases}
-$$
+$$e_y^*=\begin{cases}0,&|e_y|\leq\delta_y\\e_y,&|e_y|>\delta_y\end{cases}$$
 
 Esta estrategia busca reducir las correcciones innecesarias causadas por ruido eléctrico o pequeñas variaciones en las lecturas de los sensores.
 
@@ -225,107 +152,41 @@ Esta estrategia busca reducir las correcciones innecesarias causadas por ruido e
 
 Para representar el comportamiento dinámico de cada actuador se define el vector de estados:
 
-$$
-x(t)=
-\begin{bmatrix}
-\theta(t)\\
-\dot{\theta}(t)
-\end{bmatrix}
-$$
+$$x(t)=\begin{bmatrix}\theta(t)\\\dot{\theta}(t)\end{bmatrix}$$
 
 La representación general en espacio de estados es:
 
-$$
-\dot{x}=Ax+Bu
-$$
+$$\dot{x}=Ax+Bu$$
 
-$$
-y=Cx+Du
-$$
+$$y=Cx+Du$$
 
 Para el modelo de segundo orden, las matrices generales son:
 
-$$
-A=
-\begin{bmatrix}
-0&1\\
--\omega_n^2&-2\zeta\omega_n
-\end{bmatrix}
-$$
+$$A=\begin{bmatrix}0&1\\-\omega_n^2&-2\zeta\omega_n\end{bmatrix}$$
 
-$$
-B=
-\begin{bmatrix}
-0\\
-K\omega_n^2
-\end{bmatrix}
-$$
+$$B=\begin{bmatrix}0\\K\omega_n^2\end{bmatrix}$$
 
-$$
-C=
-\begin{bmatrix}
-1&0
-\end{bmatrix}
-$$
+$$C=\begin{bmatrix}1&0\end{bmatrix}$$
 
-$$
-D=0
-$$
+$$D=0$$
 
 ### 7.1. Modelo en espacio de estados – PAN
 
-$$
-A_{PAN}=
-\begin{bmatrix}
-0&1\\
--641.1&-25.33
-\end{bmatrix}
-$$
+$$A_{PAN}=\begin{bmatrix}0&1\\-641.1&-25.33\end{bmatrix}$$
 
-$$
-B_{PAN}=
-\begin{bmatrix}
-0\\
-632.5
-\end{bmatrix}
-$$
+$$B_{PAN}=\begin{bmatrix}0\\632.5\end{bmatrix}$$
 
-$$
-C_{PAN}=
-\begin{bmatrix}
-1&0
-\end{bmatrix}
-$$
+$$C_{PAN}=\begin{bmatrix}1&0\end{bmatrix}$$
 
-$$
-D_{PAN}=0
-$$
+$$D_{PAN}=0$$
 
 ### 7.2. Modelo en espacio de estados – TILT
 
-$$
-A_{TILT}=
-\begin{bmatrix}
-0&1\\
--633.8&-25.10
-\end{bmatrix}
-$$
+$$A_{TILT}=\begin{bmatrix}0&1\\-633.8&-25.10\end{bmatrix}$$
 
-$$
-B_{TILT}=
-\begin{bmatrix}
-0\\
-627.3
-\end{bmatrix}
-$$
+$$B_{TILT}=\begin{bmatrix}0\\627.3\end{bmatrix}$$
 
-$$
-C_{TILT}=
-\begin{bmatrix}
-1&0
-\end{bmatrix}
-$$
+$$C_{TILT}=\begin{bmatrix}1&0\end{bmatrix}$$
 
-$$
-D_{TILT}=0
-$$
+$$D_{TILT}=0$$
+
