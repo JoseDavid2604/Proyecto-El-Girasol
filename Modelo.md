@@ -36,9 +36,13 @@ Donde:
 - $\Theta_x(s), \Theta_y(s)$: posiciones angulares reales.
 - $U_x(s), U_y(s)$: comandos de posición.
 
-Para ambos ejes, el modelo matricial desacoplado se expresa como:
+Para ambos ejes, el modelo desacoplado se expresa mediante las siguientes relaciones:
 
-$$\begin{bmatrix}\Theta_x(s)\\\Theta_y(s)\end{bmatrix}=\begin{bmatrix}G_x(s)&0\\0&G_y(s)\end{bmatrix}\begin{bmatrix}U_x(s)\\U_y(s)\end{bmatrix}$$
+$$\Theta_x(s)=G_x(s)\,u_x(s)$$
+
+$$\Theta_y(s)=G_y(s)\,u_y(s)$$
+
+Donde cada eje funciona de manera independiente y posee su propia función de transferencia.
 
 ## 3. Funciones de transferencia identificadas experimentalmente
 
