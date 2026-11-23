@@ -168,19 +168,27 @@ $$\dot{x}=Ax+Bu$$
 
 $$y=Cx+Du$$
 
-Para el modelo de segundo orden, las matrices generales son:
+Para el modelo de segundo orden, las matrices generales son las siguientes:
 
 ### 7.1. Matriz de estados A
 
-$$A=\begin{bmatrix}0&1\\-\omega_n^2&-2\zeta\omega_n\end{bmatrix}$$
+| Primera fila | Segunda columna |
+|:---:|:---:|
+| 0 | 1 |
+| $-\omega_n^2$ | $-2\zeta\omega_n$ |
 
 ### 7.2. Matriz de entrada B
 
-$$B=\begin{bmatrix}0\\K\omega_n^2\end{bmatrix}$$
+| Elemento |
+|:---:|
+| 0 |
+| $K\omega_n^2$ |
 
 ### 7.3. Matriz de salida C
 
-$$C=\begin{bmatrix}1&0\end{bmatrix}$$
+| Primer elemento | Segundo elemento |
+|:---:|:---:|
+| 1 | 0 |
 
 ### 7.4. Matriz de transmisión directa D
 
@@ -188,39 +196,53 @@ $$D=0$$
 
 ### 7.5. Modelo en espacio de estados – PAN
 
-Matriz A:
+**Matriz A:**
 
-$$A_{PAN}=\begin{bmatrix}0&1\\-641.1&-25.33\end{bmatrix}$$
+| Primera columna | Segunda columna |
+|:---:|:---:|
+| 0 | 1 |
+| -641.1 | -25.33 |
 
-Matriz B:
+**Matriz B:**
 
-$$B_{PAN}=\begin{bmatrix}0\\632.5\end{bmatrix}$$
+| Elemento |
+|:---:|
+| 0 |
+| 632.5 |
 
-Matriz C:
+**Matriz C:**
 
-$$C_{PAN}=\begin{bmatrix}1&0\end{bmatrix}$$
+| Primer elemento | Segundo elemento |
+|:---:|:---:|
+| 1 | 0 |
 
-Matriz D:
+**Matriz D:**
 
 $$D_{PAN}=0$$
 
 ### 7.6. Modelo en espacio de estados – TILT
 
-Matriz A:
+**Matriz A:**
 
-$$A_{TILT}=\begin{bmatrix}0&1\\-633.8&-25.10\end{bmatrix}$$
+| Primera columna | Segunda columna |
+|:---:|:---:|
+| 0 | 1 |
+| -633.8 | -25.10 |
 
-Matriz B:
+**Matriz B:**
 
-$$B_{TILT}=\begin{bmatrix}0\\627.3\end{bmatrix}$$
+| Elemento |
+|:---:|
+| 0 |
+| 627.3 |
 
-Matriz C:
+**Matriz C:**
 
-$$C_{TILT}=\begin{bmatrix}1&0\end{bmatrix}$$
+| Primer elemento | Segundo elemento |
+|:---:|:---:|
+| 1 | 0 |
 
-Matriz D:
+**Matriz D:**
 
 $$D_{TILT}=0$$
-
-
 
