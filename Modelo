@@ -1,1 +1,103 @@
+# Modelo Matemático y Simulaciones – El Girasol
 
+## 1. Modelo del sistema
+
+El proyecto cuenta con dos grados de libertad:
+
+- **PAN:** movimiento horizontal o azimut.
+- **TILT:** movimiento vertical o elevación.
+
+Cada eje se representa mediante un modelo dinámico equivalente de segundo orden.
+
+## 2. Funciones de transferencia identificadas
+
+A partir de las mediciones experimentales y el procesamiento de datos en MATLAB, se obtuvieron las siguientes funciones de transferencia:
+
+### Eje horizontal – PAN
+
+\[
+G_{PAN}(s)=\frac{632.5}{s^2+25.33s+641.1}
+\]
+
+### Eje vertical – TILT
+
+\[
+G_{TILT}(s)=\frac{627.3}{s^2+25.10s+633.8}
+\]
+
+### Modelo promedio
+
+Para análisis preliminares también se obtuvo un modelo promedio de ambos ejes:
+
+\[
+G(s)=\frac{629.7}{s^2+25.22s+637.4}
+\]
+
+## 3. Parámetros dinámicos identificados
+
+| Parámetro | PAN | TILT |
+|---|---:|---:|
+| Ganancia estática (K) | 0.98669 | 0.98970 |
+| Amortiguamiento (ζ) | 0.50026 | 0.49847 |
+| Frecuencia natural (ωn) | 25.31960 rad/s | 25.17597 rad/s |
+| Frecuencia amortiguada (ωd) | 21.92364 rad/s | 21.82524 rad/s |
+| Tiempo de establecimiento (ts) | 0.31580 s | 0.31874 s |
+
+Los parámetros corresponden a la identificación experimental presentada en el informe técnico del proyecto.
+
+## 4. Modelo de percepción óptica
+
+El sistema utiliza cuatro fototransistores distribuidos en los siguientes cuadrantes:
+
+- S1: superior izquierdo.
+- S2: superior derecho.
+- S3: inferior izquierdo.
+- S4: inferior derecho.
+
+Las señales se normalizan y se utilizan para calcular los errores de orientación horizontal y vertical:
+
+\[
+S_L=S_1+S_3
+\]
+
+\[
+S_R=S_2+S_4
+\]
+
+\[
+S_U=S_1+S_2
+\]
+
+\[
+S_D=S_3+S_4
+\]
+
+\[
+e_x=\frac{S_L-S_R}{S_L+S_R+\varepsilon}
+\]
+
+\[
+e_y=\frac{S_U-S_D}{S_U+S_D+\varepsilon}
+\]
+
+Donde ε es una constante positiva pequeña que evita divisiones entre cero.
+
+## 5. Representación en espacio de estados
+
+El modelo de cada eje se representa mediante un vector de estados:
+
+\[
+x(t)=
+\begin{bmatrix}
+\theta(t)\\
+\dot{\theta}(t)
+\end{bmatrix}
+\]
+
+La representación permite analizar el comportamiento dinámico de los actuadores y sirve como base para el diseño del controlador.
+
+## 6. Estrategia de control propuesta
+
+Se contempla un controlador proporcional incremental que actualiza las posiciones objetivo de los motores a partir de los errores ópticos.
+
+Además, se incorpora una banda muerta para evitar correcciones innecesarias cuando el error se encuentra dentro de un umbral establecido.
