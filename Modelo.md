@@ -329,7 +329,3 @@ $$
 $$
 D_{TILT}=0
 $$
-
-
-
-La información presentada corresponde al informe técnico **Sistema de Seguimiento Infrarrojo: El Girasol**, desarrollado para el curso **EL5409 – Laboratorio de Control Automático**, octubre de 2026.
