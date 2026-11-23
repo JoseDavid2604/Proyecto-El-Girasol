@@ -1,4 +1,4 @@
-#  Modelo Matemático y Simulaciones – El Girasol
+# Modelo Matemático y Simulaciones – El Girasol
 
 ## 1. Modelo del sistema
 
@@ -38,11 +38,11 @@ Donde:
 
 Para ambos ejes, el modelo desacoplado se expresa mediante las siguientes relaciones:
 
-$$\Theta_x(s)=G_x(s)\,u_x(s)$$
+$$\Theta_x(s)=G_x(s)u_x(s)$$
 
-$$\Theta_y(s)=G_y(s)\,u_y(s)$$
+$$\Theta_y(s)=G_y(s)u_y(s)$$
 
-Donde cada eje funciona de manera independiente y posee su propia función de transferencia.
+Cada eje funciona de manera independiente y posee su propia función de transferencia.
 
 ## 3. Funciones de transferencia identificadas experimentalmente
 
@@ -142,13 +142,17 @@ Donde:
 - $\theta_{y,r}$: posición objetivo del eje TILT.
 - $e_x^*$ y $e_y^*$: errores después de aplicar la banda muerta.
 
-La banda muerta se define para el eje horizontal como:
+La banda muerta se define para el eje horizontal mediante las siguientes condiciones:
 
-$$e_x^*=\begin{cases}0,&|e_x|\leq\delta_x\\e_x,&|e_x|>\delta_x\end{cases}$$
+$$e_x^*=0 \qquad \text{si } |e_x|\leq\delta_x$$
+
+$$e_x^*=e_x \qquad \text{si } |e_x|>\delta_x$$
 
 Para el eje vertical se utiliza de manera equivalente el umbral $\delta_y$:
 
-$$e_y^*=\begin{cases}0,&|e_y|\leq\delta_y\\e_y,&|e_y|>\delta_y\end{cases}$$
+$$e_y^*=0 \qquad \text{si } |e_y|\leq\delta_y$$
+
+$$e_y^*=e_y \qquad \text{si } |e_y|>\delta_y$$
 
 Esta estrategia busca reducir las correcciones innecesarias causadas por ruido eléctrico o pequeñas variaciones en las lecturas de los sensores.
 
@@ -166,31 +170,55 @@ $$y=Cx+Du$$
 
 Para el modelo de segundo orden, las matrices generales son:
 
+### 7.1. Matriz de estados A
+
 $$A=\begin{bmatrix}0&1\\-\omega_n^2&-2\zeta\omega_n\end{bmatrix}$$
+
+### 7.2. Matriz de entrada B
 
 $$B=\begin{bmatrix}0\\K\omega_n^2\end{bmatrix}$$
 
+### 7.3. Matriz de salida C
+
 $$C=\begin{bmatrix}1&0\end{bmatrix}$$
+
+### 7.4. Matriz de transmisión directa D
 
 $$D=0$$
 
-### 7.1. Modelo en espacio de estados – PAN
+### 7.5. Modelo en espacio de estados – PAN
+
+Matriz A:
 
 $$A_{PAN}=\begin{bmatrix}0&1\\-641.1&-25.33\end{bmatrix}$$
 
+Matriz B:
+
 $$B_{PAN}=\begin{bmatrix}0\\632.5\end{bmatrix}$$
+
+Matriz C:
 
 $$C_{PAN}=\begin{bmatrix}1&0\end{bmatrix}$$
 
+Matriz D:
+
 $$D_{PAN}=0$$
 
-### 7.2. Modelo en espacio de estados – TILT
+### 7.6. Modelo en espacio de estados – TILT
+
+Matriz A:
 
 $$A_{TILT}=\begin{bmatrix}0&1\\-633.8&-25.10\end{bmatrix}$$
 
+Matriz B:
+
 $$B_{TILT}=\begin{bmatrix}0\\627.3\end{bmatrix}$$
 
+Matriz C:
+
 $$C_{TILT}=\begin{bmatrix}1&0\end{bmatrix}$$
+
+Matriz D:
 
 $$D_{TILT}=0$$
 
