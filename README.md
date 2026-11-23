@@ -48,12 +48,11 @@ El trabajo se divide en las siguientes etapas:
 
 ## 5. Organización del repositorio
 
-- `01_Documentacion/`: informe, bitácora y documentos del curso.
-- `02_Modelado_Matematico/`: ecuaciones, funciones de transferencia y modelos.
-- `03_Hardware/`: componentes, conexiones y diagramas.
-- `04_Codigo_Fuente/`: programas y algoritmos de control.
-- `05_Simulaciones_y_Datos/`: simulaciones, datos y gráficas experimentales.
-- `06_Evidencias/`: fotografías y registros de pruebas.
+- `01_Informe/`: informe.
+- `02_Motores/`: códigos fuente y algoritmos de control.
+- `03_/Modelo`: ecuaciones, funciones de transferencia y modelos.
+- `04_Simulaciones/`: simulaciones, datos y gráficas experimentales.
+- `05_Evidencias/`: fotografías y videos.
 
 ## 6. Tecnologías y herramientas
 
@@ -78,4 +77,4 @@ El proyecto se encuentra en desarrollo. Se dispone de documentación, EL modelad
 
 ## 9. Documentación
 
-Consultar la carpeta `01_Documentacion/` para acceder al informe técnico, la bitácora de trabajo y las instrucciones del proyecto.
+Consultar las carpetas para acceder al informe técnico, la bitácora de trabajo.
