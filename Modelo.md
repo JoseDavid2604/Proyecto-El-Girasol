@@ -1,4 +1,4 @@
-# 📐 Modelo Matemático y Simulaciones – El Girasol
+#  Modelo Matemático y Simulaciones – El Girasol
 
 ## 1. Modelo del sistema
 
@@ -194,33 +194,5 @@ $$C_{TILT}=\begin{bmatrix}1&0\end{bmatrix}$$
 
 $$D_{TILT}=0$$
 
-## 8. Metodología de identificación experimental
 
-La identificación experimental de los servomotores se realizó mediante pruebas de respuesta al escalón.
 
-El procedimiento descrito en el informe contempla:
-
-1. Aplicar cambios de posición objetivo a los servomotores AX-12A.
-2. Registrar la posición real reportada por la retroalimentación interna.
-3. Realizar el muestreo de las respuestas cada 50 ms.
-4. Exportar los datos obtenidos en formato CSV.
-5. Procesar las mediciones mediante MATLAB.
-6. Identificar los parámetros dinámicos y obtener las funciones de transferencia.
-
-Las mediciones permitieron caracterizar el comportamiento transitorio de los ejes PAN y TILT.
-
-## 9. Organización de archivos
-
-Esta carpeta reúne los documentos y archivos relacionados con el análisis matemático y las simulaciones del proyecto.
-
-- `Modelo.md`: desarrollo de ecuaciones y descripción matemática del sistema.
-- `Simulaciones/`: archivos de MATLAB y Simulink utilizados para el análisis.
-- `Resultados/`: gráficas, tablas y resultados obtenidos durante la identificación y simulación.
-
-## 10. Referencia documental
-
-La información presentada corresponde al informe técnico **Sistema de Seguimiento Infrarrojo: El Girasol**, desarrollado para el curso **EL5409 – Laboratorio de Control Automático**, octubre de 2026.
-
----
-
-**Proyecto El Girasol – Modelado Matemático y Simulaciones**
