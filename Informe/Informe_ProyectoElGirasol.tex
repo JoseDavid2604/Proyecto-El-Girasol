@@ -87,29 +87,29 @@
 \newpage
 
 \begin{abstract}
-Este informe presenta el modelado matemático, diseño y propuesta de implementación de un sistema de seguimiento de luz infrarroja de dos grados de libertad, correspondiente al proyecto ``El Girasol''. El sistema utiliza un arreglo óptico de cuatro fototransistores para estimar el error de orientación y dos servomotores inteligentes Dynamixel AX-12A controlados mediante una placa ArbotiX-M para orientar el cabezal sensor de manera autónoma e inalámbrica. Se detallan el modelo de percepción, el modelado dinámico de los actuadores como sistemas de segundo orden, la formulación en espacio de estados y la estructura de un controlador proporcional incremental con banda muerta.
+Este informe presenta el modelado matemático, la identificación experimental y la propuesta de implementación de un sistema de seguimiento de luz de dos grados de libertad, correspondiente al proyecto ``El Girasol''. El sistema emplea un arreglo simétrico de cuatro fotoresistencias (LDR) divididas mediante un tabique para estimar el error de orientación y dos servomotores inteligentes Dynamixel AX-12A comandados mediante una placa ArbotiX-M para orientar el cabezal sensor de forma autónoma e inalámbrica. Se detallan la compensación y calibración óptica, los modelos de pequeña señal y acoplamiento entre ejes, la identificación dinámica de los actuadores como sistemas de segundo orden, la formulación en espacio de estados y la estructura de un controlador proporcional incremental con banda muerta.
 \end{abstract}
 
 \section{Introducción}
-El control automático de sistemas orientables es fundamental en aplicaciones de seguimiento y robótica móvil. El proyecto ``El Girasol'' plantea el diseño de un sistema autónomo capaz de detectar y rastrear una fuente de luz infrarroja dentro de su esfera de operación utilizando un kit Dynamixel y un controlador ArbotiX-M con alimentación independiente por batería.
+El control automático de sistemas orientables es fundamental en aplicaciones de seguimiento y robótica móvil. El proyecto ``El Girasol'' plantea el diseño de un sistema autónomo capaz de detectar y rastrear una fuente luminosa dentro de su esfera de operación utilizando un kit Dynamixel y un controlador ArbotiX-M con alimentación independiente por batería.
 
 \section{Objetivos}
 \subsection{Objetivo General}
-Diseñar, modelar e implementar un sistema de control de dos grados de libertad capaz de ubicar y seguir una fuente de luz infrarroja mediante un arreglo de fototransistores y servomotores Dynamixel AX-12A.
+Diseñar, modelar e implementar un sistema de control de dos grados de libertad capaz de ubicar y seguir una fuente luminosa mediante un arreglo de fotoresistencias y servomotores Dynamixel AX-12A.
 
 \subsection{Objetivos Específicos}
 \begin{itemize}
-    \item Desarrollar el modelo matemático del arreglo de fototransistores para la estimación de los errores angulares horizontal y vertical.
-    \item Obtener el modelo dinámico de los servomotores como un sistema de segundo orden equivalente.
+    \item Desarrollar el modelo matemático del arreglo de fotoresistencias, incluyendo compensación en oscuridad, calibración central, estimación de errores normalizados y análisis de acoplamiento entre ejes.
+    \item Obtener el modelo dinámico de los servomotores como un sistema de segundo orden equivalente a partir de pruebas experimentales.
     \item Implementar el análisis de estabilidad y desempeño del sistema.
-    \item Diseñar un controlador digital para el seguimiento robusto ante movimientos de la fuente de luz.
+    \item Diseñar un controlador digital para el seguimiento robusto ante movimientos de la fuente luminosa.
 \end{itemize}
 
 \section{Marco Teórico}
-El diseño de sistemas de seguimiento óptico y control de posición requiere la integración de principios de optoelectrónica, modelado de sistemas dinámicos y control digital por retroalimentación. A continuación, se detallan los fundamentos teóricos que respaldan el desarrollo del proyecto.
+El diseño de sistemas de seguimiento óptico y control de posición requiere la integración de principios de sensado optoelectrónico, modelado de sistemas dinámicos y control digital por retroalimentación. A continuación, se detallan los fundamentos teóricos que respaldan el desarrollo del proyecto.
 
 \subsection{Sistemas de Percepción Óptica y Normalización de Señales}
-Los sistemas orientados a la detección de fuentes luminosas suelen emplear arreglos diferenciales de dispositivos optoelectrónicos, tales como fototransistores o fotodiodos. Debido a las tolerancias de fabricación y a las variaciones en la distancia respecto a la fuente, las señales eléctricas crudas $V_i(t)$ se ven afectadas por la intensidad absoluta y la ganancia individual de cada sensor. Para mitigar esto, se implementa una normalización lineal que acota las lecturas entre $0$ y $1$ \cite{dorf2016modern}. La estimación del error angular diferencial mediante sumas cruzadas de cuadrantes permite obtener una medida normalizada independiente de la intensidad lumínica global de la fuente, aproximándose de manera lineal a la desviación angular real en las cercanías del punto de equilibrio \cite{ogata2010modern}.
+Los sistemas orientados a la detección de fuentes luminosas suelen emplear arreglos diferenciales de sensores sensibles a la luz, tales como fotoresistencias (LDR), fototransistores o fotodiodos. En el caso de las fotoresistencias, su resistencia eléctrica varía en función de la irradiancia incidente y se acondiciona mediante redes resistivas (divisores de tensión) y conversión analógico-digital para generar lecturas $S_i(t)$. Debido a las tolerancias de fabricación, la no linealidad característica de estos elementos, la iluminación ambiental y las variaciones en la distancia o ángulo respecto a la fuente, las lecturas crudas se ven afectadas por offsets en oscuridad y diferencias de ganancia entre sensores. Para mitigar estos efectos, se aplican correcciones de offset en oscuridad, ganancias de calibración en un punto de referencia central y normalización diferencial respecto a la suma de señales, obteniendo una medida adimensional acotada que aproxima la desviación angular alrededor del punto de operación \cite{dorf2016modern, ogata2010modern}.
 
 \subsection{Modelado Dinámico de Servomotores de Posición}
 Los servomotores inteligentes, como los actuadores Dynamixel AX-12A, integran un lazo cerrado de control de posición interno a nivel de hardware. Desde la perspectiva de la teoría de control clásico, cuando se comandan a través de un controlador externo (como la placa ArbotiX-M), la relación entre la posición objetivo $u(t)$ y la posición real $\theta(t)$ puede aproximarse satisfactoriamente mediante una función de transferencia de segundo orden subamortiguada \cite{franklin2015feedback}. Este modelo captura de manera adecuada la ganancia estática, el tiempo de establecimiento y las oscilaciones o sobreimpulso característicos de la respuesta dinámica del motor y su carga mecánica asociada.
@@ -121,27 +121,35 @@ Para sistemas multivariable o que requieren un análisis avanzado de estabilidad
 En aplicaciones de seguimiento en tiempo real con fuentes móviles, un controlador proporcional (P) incremental resulta ventajoso porque calcula correcciones sobre la posición objetivo actual en lugar de requerir una referencia absoluta constante. Sin embargo, los sistemas físicos discretos sujetos a ruido eléctrico en los sensores sufren de vibraciones o desgaste mecánico por microcorrecciones continuas. Para solucionar esto, se implementa una función de \emph{banda muerta} (dead zone), la cual inhibe la acción de control cuando el error absoluto se encuentra por debajo de un umbral predefinido $\delta$, garantizando la estabilidad en el estado estacionario \cite{astrom2008feedback}.
 
 \section{Descripción del Sistema Físico}
-El sistema de seguimiento infrarrojo ``El Girasol'' está constituido por un arreglo mecatrónico de dos grados de libertad diseñado para operar de manera autónoma e inalámbrica mediante alimentación por batería. La arquitectura del sistema se divide en tres subsistemas principales:
+El sistema de seguimiento ``El Girasol'' está constituido por un arreglo mecatrónico de dos grados de libertad diseñado para operar de manera autónoma e inalámbrica mediante alimentación por batería. La arquitectura del sistema se divide en tres subsistemas principales:
 
 \begin{itemize}
-    \item \textbf{Subsistema de Percepción Óptica:} Consiste en un arreglo simétrico de cuatro fototransistores ($S_1$ a $S_4$) montados sobre el cabezal sensor. Esta disposición permite captar la intensidad lumínica desde distintos ángulos frontales y generar las señales analógicas necesarias para estimar el error direccional respecto a la fuente infrarroja.
-    \item \textbf{Subsistema de Actuación (Planta Mecánica):} Está compuesto por dos servomotores inteligentes Dynamixel AX-12A acoplados ortogonalmente. El primer motor controla el giro horizontal (azimut o base), mientras que el segundo motor gestiona la inclinación vertical (elevación del cabezal). Estos motores integran un controlador interno de posición y retroalimentación de estado.
-    \item \textbf{Subsistema de Control Digital:} Emplea una tarjeta controladora ArbotiX-M, encargada de leer las señales eléctricas de los fototransistores, ejecutar los algoritmos de control digital y enviar los comandos de posición objetivo hacia los servomotores de manera síncrona.
+    \item \textbf{Subsistema de Percepción Óptica:} Consiste en un arreglo simétrico de cuatro fotoresistencias ($S_1$ a $S_4$) montadas sobre el cabezal sensor y separadas mediante un tabique divisor. Esta configuración permite contrastar la iluminación incidente entre cuadrantes y generar las lecturas analógico-digitales necesarias para estimar la desviación angular respecto a la fuente luminosa en los ejes horizontal (\emph{Pan}) y vertical (\emph{Tilt}).
+    \item \textbf{Subsistema de Actuación (Planta Mecánica):} Está compuesto por dos servomotores inteligentes Dynamixel AX-12A acoplados ortogonalmente. El primer motor controla el giro horizontal (\emph{Pan} o azimut), mientras que el segundo motor gestiona la inclinación vertical (\emph{Tilt} o elevación del cabezal). Estos motores integran un controlador interno de posición y retroalimentación de estado.
+    \item \textbf{Subsistema de Control Digital:} Emplea una tarjeta controladora ArbotiX-M, encargada de adquirir las señales de las cuatro fotoresistencias, ejecutar los algoritmos de compensación y control digital, y enviar los comandos de posición objetivo hacia los servomotores de manera síncrona.
 \end{itemize}
 
 \section{Nomenclatura y Glosario de Variables}
-Para facilitar la lectura y comprensión del modelado matemático desarrollado en este informe, a continuación se definen los símbolos y variables principales utilizados:
+Para facilitar la lectura y comprensión del modelado matemático y la identificación experimental desarrollada en este informe, a continuación se definen los símbolos y variables principales utilizados:
 
 \begin{itemize}
-    \item $\theta_x, \theta_y$: Ángulo de giro horizontal (azimut) y ángulo de inclinación vertical (elevación) $[\text{rad}]$.
-    \item $u_x, u_y$: Comandos o posiciones objetivo enviadas a los ejes horizontal y vertical $[\text{rad}]$.
-    \item $V_i(t)$: Tensión eléctrica medida en el fototransistores $i$-ésimo ($i = 1, 2, 3, 4$) $[\text{V}]$.
-    \item $S_i(t)$: Señal eléctrica normalizada del fototransistor $i$-ésimo [adim.].
-    \item $S_L, S_R, S_U, S_D$: Sumas de iluminación normalizada para los cuadrantes izquierdo, derecho, superior e inferior [adim.].
-    \item $e_x, e_y$: Errores de orientación horizontal y vertical estimados [adim. o rad].
-    \item $\varepsilon$: Constante positiva pequeña para evitar divisiones entre cero [adim.].
-    \item $K_{sx}, K_{sy}$: Sensibilidades angulares horizontal y vertical del arreglo óptico $[\text{rad}^{-1}]$.
-    \item $\Delta\theta_x, \Delta\theta_y$: Desviaciones angulares respecto a la fuente infrarroja $[\text{rad}]$.
+    \item $\theta_x, \theta_y$: Ángulo de giro horizontal (\emph{Pan}) y ángulo de inclinación vertical (\emph{Tilt}) del sistema $[\text{rad}]$ o $[\text{deg}]$.
+    \item $\theta_{\mathrm{ref},x}, \theta_{\mathrm{ref},y}$: Posiciones angulares de referencia asociadas a la fuente luminosa $[\text{rad}]$ o $[\text{deg}]$.
+    \item $\Delta\theta_x, \Delta\theta_y$: Desviaciones o errores angulares respecto a la fuente luminosa $[\text{rad}]$ o $[\text{deg}]$.
+    \item $u_x, u_y$: Comandos o posiciones objetivo enviadas a los ejes horizontal y vertical $[\text{rad}]$ o pasos digitales.
+    \item $S_i(t)$: Lectura obtenida mediante el convertidor analógico-digital (ADC) para el sensor LDR $i$-ésimo ($i = 1, 2, 3, 4$) $[\text{ADC}]$.
+    \item $O_i$: Lectura promedio de compensación en oscuridad para el sensor $i$-ésimo $[\text{ADC}]$.
+    \item $A_i, A_{i,c}$: Lectura promedio ambiental y lectura ambiental corregida respecto a oscuridad para el sensor $i$-ésimo $[\text{ADC}]$.
+    \item $\overline{S}_{c,0}$: Promedio de las cuatro lecturas corregidas en oscuridad en la posición central $[\text{ADC}]$.
+    \item $G_i$: Ganancia de calibración individual del sensor $i$-ésimo respecto al punto central [adim.].
+    \item $U_i(t)$: Señal compensada (en oscuridad y calibración central) del sensor LDR $i$-ésimo $[\text{ADC}]$.
+    \item $T(t)$: Señal total dada por la suma de las cuatro señales compensadas $U_1(t)+U_2(t)+U_3(t)+U_4(t)$ $[\text{ADC}]$.
+    \item $D_x(t), D_y(t)$: Errores diferenciales normalizados horizontal y vertical [adim.].
+    \item $D_{x,0}, D_{y,0}$: Errores diferenciales normalizados residuales en la posición central [adim.].
+    \item $e_x(t), e_y(t)$: Errores normalizados compensados en el punto central para los ejes \emph{Pan} y \emph{Tilt} [adim.].
+    \item $K_{s,x}, K_{s,y}$: Sensibilidades o ganancias estáticas equivalentes del subsistema de sensado $[\text{rad}^{-1}]$ o $[\text{deg}^{-1}]$.
+    \item $\mathbf{J}$: Matriz Jacobiana de sensibilidad de pequeña señal del subsistema de sensado $[\text{rad}^{-1}]$.
+    \item $C_{x\rightarrow y}, C_{y\rightarrow x}$: Porcentajes de acoplamiento cruzado entre los ejes \emph{Pan} y \emph{Tilt} $[\%]$.
     \item $G_x(s), G_y(s)$: Funciones de transferencia equivalentes de segundo orden para los ejes horizontal y vertical.
     \item $K_x, K_y$: Ganancias estáticas de los servomotores [adim.].
     \item $\omega_{nx}, \omega_{ny}$: Frecuencias naturales de los ejes horizontal y vertical $[\text{rad/s}]$.
@@ -159,8 +167,8 @@ Para facilitar la lectura y comprensión del modelado matemático desarrollado e
 \subsection{Definición de Variables y Coordenadas}
 El sistema opera sobre dos ejes angulares principales:
 \begin{itemize}
-    \item $\theta_x$: Ángulo de giro horizontal (azimut) en radianes.
-    \item $\theta_y$: Ángulo de inclinación vertical (elevación) en radianes.
+    \item $\theta_x$: Ángulo de giro horizontal (\emph{Pan}) en radianes o grados.
+    \item $\theta_y$: Ángulo de inclinación vertical (\emph{Tilt}) en radianes o grados.
     \item $u_x, u_y$: Comandos de posición objetivo para los ejes horizontal y vertical.
 \end{itemize}
 
@@ -175,20 +183,31 @@ En forma matricial para ambos ejes desacoplados:
 \begin{bmatrix} \Theta_x(s)\\ \Theta_y(s) \end{bmatrix} = \begin{bmatrix} G_x(s)&0\\ 0&G_y(s) \end{bmatrix} \begin{bmatrix} U_x(s)\\ U_y(s) \end{bmatrix}
 \end{equation}
 
-\subsection{Modelo de Percepción (Arreglo de Fototransistores)}
-Se emplea un arreglo de cuatro fototransistores ($S_1$: Superior Izquierdo, $S_2$: Superior Derecho, $S_3$: Inferior Izquierdo, $S_4$: Inferior Derecho). Las señales eléctricas normalizadas $S_i(t) \in [0, 1]$ se obtienen mediante:
+\subsection{Modelo de Percepción (Arreglo de Fotoresistencias)}
+El subsistema de sensado está conformado por cuatro fotoresistencias $S_1$, $S_2$, $S_3$ y $S_4$ separadas por un tabique divisor, cuyas lecturas ADC se agrupan en el vector $\mathbf{S}(t) = [S_1(t)\; S_2(t)\; S_3(t)\; S_4(t)]^T$. Para compensar las diferencias de respuesta en oscuridad, se calcula el promedio de las últimas $N=10$ muestras en oscuridad ($O_i$) y se corrige cada lectura mediante $S_{i,c}(t) = S_i(t) - O_i$.
+
+Aunque se evaluó la lectura ambiental promedio $A_i$ y su valor corregido $A_{i,c} = A_i - O_i$, la sustracción directa de luz ambiental produjo valores negativos en ciertas posiciones angulares que afectaban los errores normalizados; por ello, la luz ambiental se emplea únicamente como referencia del entorno y la calibración se realiza en oscuridad y en posición central. A partir del promedio central corregido $\overline{S}_{c,0} = \frac{1}{4}\sum_{i=1}^{4} S_{i,c}(0)$, se define la ganancia individual $G_i = \overline{S}_{c,0}/S_{i,c}(0)$ y la señal compensada de cada sensor:
 \begin{equation}
-S_i(t) = \frac{V_i(t) - V_{i,\min}}{V_{i,\max} - V_{i,\min}}
+U_i(t) = G_i\left[S_i(t) - O_i\right]
 \end{equation}
 
-A partir de las sumas de iluminación por cuadrantes ($S_L, S_R, S_U, S_D$), los errores normalizados se definen como:
+Definiendo la señal total $T(t) = U_1(t) + U_2(t) + U_3(t) + U_4(t)$ (verificada con $T(t) > 0$), los errores diferenciales normalizados para los ejes \emph{Pan} y \emph{Tilt} se expresan como:
 \begin{align}
-e_x &= \frac{S_L - S_R}{S_L + S_R + \varepsilon} \\
-e_y &= \frac{S_U - S_D}{S_U + S_D + \varepsilon}
+D_x(t) = \frac{U_1(t) + U_3(t) - U_2(t) - U_4(t)}{T(t)} \\
+D_y(t) = \frac{U_1(t) + U_2(t) - U_3(t) - U_4(t)}{T(t)}
 \end{align}
-donde $\varepsilon$ es una constante positiva pequeña para evitar divisiones entre cero. La relación lineal aproximada con respecto a la desviación angular es:
+y, compensando los errores residuales en la posición central ($D_{x,0}, D_{y,0}$), se obtienen los errores normalizados finales:
 \begin{equation}
-e_x \approx K_{sx}\Delta\theta_x, \quad e_y \approx K_{sy}\Delta\theta_y
+e_x(t) = D_x(t) - D_{x,0}, \qquad e_y(t) = D_y(t) - D_{y,0}
+\end{equation}
+
+Con la desviación angular definida como $\Delta\theta_x(t) = \theta_{\mathrm{ref},x}(t) - \theta_x(t)$ y $\Delta\theta_y(t) = \theta_{\mathrm{ref},y}(t) - \theta_y(t)$, la aproximación lineal local alrededor del centro corresponde a $e_x(t) \approx K_{s,x}\Delta\theta_x(t)$ y $e_y(t) \approx K_{s,y}\Delta\theta_y(t)$. Asimismo, debido al acoplamiento observado entre ejes, el modelo local matricial con el Jacobiano $\mathbf{J}$ se expresa como:
+\begin{equation}
+\mathbf{e}(t) \approx \mathbf{J}\left[\boldsymbol{\theta}_{\mathrm{ref}}(t) - \boldsymbol{\theta}(t)\right], \qquad
+\mathbf{J} = \begin{bmatrix}
+\dfrac{\partial e_x}{\partial \Delta\theta_x} & \dfrac{\partial e_x}{\partial \Delta\theta_y} \\[8pt]
+\dfrac{\partial e_y}{\partial \Delta\theta_x} & \dfrac{\partial e_y}{\partial \Delta\theta_y}
+\end{bmatrix}
 \end{equation}
 
 \subsection{Modelo del Controlador y Banda Muerta}
@@ -213,7 +232,7 @@ y_x &= \begin{bmatrix} 1 & 0 \end{bmatrix} \mathbf{x}
 Para validar el modelo teórico, se proponen las siguientes pruebas en el laboratorio:
 \begin{enumerate}
     \item \textbf{Respuesta al Escalón:} Aplicar escalones de posición a los motores AX-12A y registrar la curva temporal para identificar parámetros de la planta ($\omega_n$, $\zeta$ y $K$).
-    \item \textbf{Calibración Óptica:} Posicionar la fuente infrarroja en coordenadas angulares conocidas para determinar experimentalmente las sensibilidades $K_{sx}$ y $K_{sy}$.
+    \item \textbf{Calibración y Caracterización Óptica:} Registrar las lecturas de las cuatro fotoresistencias en oscuridad, bajo iluminación ambiental y en distintas posiciones angulares conocidas para determinar los parámetros de compensación, las ganancias de calibración y las relaciones angulares de los ejes \emph{Pan} y \emph{Tilt}.
 \end{enumerate}
 
 \subsection{Mediciones Experimentales}
@@ -265,6 +284,57 @@ Las respuestas temporales obtenidas a partir de los registros experimentales y s
     \label{fig:ident_tilt}
 \end{figure}
 
+De manera paralela, para caracterizar el subsistema de sensado con las cuatro fotoresistencias, se empleó igualmente código en C++ en Arduino IDE sobre la placa ArbotiX-M, muestreando las lecturas ADC de cada sensor cada $250\text{ ms}$ y guardando las mediciones en archivos CSV para su procesamiento en MATLAB. Las pruebas incluyeron condiciones de oscuridad, iluminación ambiental (sin la fuente luminosa objetivo) y desplazamientos angulares con variaciones de $10^\circ$ en cada dirección (izquierda, derecha, arriba y abajo), evaluando posiciones en el rango de $-30^\circ$ a $+30^\circ$ (por ejemplo, izquierda $10^\circ$, $20^\circ$ y $30^\circ$), con promedios calculados sobre las últimas $N=10$ muestras de cada condición.
+
+En el registro de las fotoresistencias, cada fila incluye el identificador de iteración (\texttt{Iteracion}), el índice de muestra consecutivo (\texttt{N}) tomado cada $250\text{ ms}$ y las lecturas ADC de los cuatro sensores (\texttt{S1}, \texttt{S2}, \texttt{S3} y \texttt{S4}). En el Cuadro~\ref{tab:muestra_ldr_centrada} se muestra un ejemplo de la serie de $20$ muestras obtenida con la fuente LED centrada, donde se aprecia la estabilización progresiva de las lecturas tras el inicio de la captura.
+
+\begin{table}[H]
+    \centering
+    \caption{Registro de ejemplo de mediciones ADC de las fotoresistencias con la fuente LED centrada (Iteración 1, muestreo cada $250\text{ ms}$).}
+    \label{tab:muestra_ldr_centrada}
+    \begin{tabular}{cccccc}
+        \toprule
+        \textbf{Iteración} & \textbf{N} & \textbf{S1} & \textbf{S2} & \textbf{S3} & \textbf{S4} \\
+        \midrule
+        1 & 1  & 903.0 & 928.7 & 715.1 & 575.5 \\
+        1 & 2  & 902.0 & 928.0 & 800.6 & 699.6 \\
+        1 & 3  & 901.0 & 927.0 & 820.4 & 748.0 \\
+        1 & 4  & 900.0 & 927.0 & 825.8 & 764.6 \\
+        1 & 5  & 899.0 & 926.0 & 826.4 & 769.7 \\
+        1 & 6  & 899.0 & 925.5 & 827.0 & 772.4 \\
+        1 & 7  & 896.1 & 923.8 & 826.1 & 772.0 \\
+        1 & 8  & 896.0 & 923.2 & 826.0 & 772.1 \\
+        1 & 9  & 899.0 & 924.0 & 827.0 & 773.4 \\
+        1 & 10 & 901.9 & 925.0 & 827.5 & 774.1 \\
+        1 & 11 & 902.0 & 923.0 & 826.9 & 773.8 \\
+        1 & 12 & 901.0 & 923.0 & 826.9 & 773.6 \\
+        1 & 13 & 902.0 & 923.4 & 827.2 & 774.2 \\
+        1 & 14 & 900.9 & 922.0 & 826.3 & 774.0 \\
+        1 & 15 & 899.0 & 920.0 & 825.4 & 773.6 \\
+        1 & 16 & 900.7 & 918.9 & 823.8 & 771.8 \\
+        1 & 17 & 902.3 & 921.0 & 825.7 & 772.9 \\
+        1 & 18 & 903.0 & 923.0 & 827.3 & 774.7 \\
+        1 & 19 & 902.1 & 923.6 & 827.9 & 775.7 \\
+        1 & 20 & 901.0 & 923.8 & 828.5 & 775.6 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Asimismo, las curvas experimentales de calibración angular obtenidas en MATLAB para el error horizontal normalizado ($e_x$) frente al ángulo \emph{Pan} (en grados) y para el error vertical normalizado ($e_y$) frente al ángulo \emph{Tilt} (en grados) se presentan en las Figuras~\ref{fig:cal_pan} y~\ref{fig:cal_tilt}, respectivamente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Calibracion angular Pan.png}
+    \caption{Calibración angular del error horizontal normalizado ($e_x$) respecto al ángulo \emph{Pan} (en grados).}
+    \label{fig:cal_pan}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Calibracion angular Tilt.png}
+    \caption{Calibración angular del error vertical normalizado ($e_y$) respecto al ángulo \emph{Tilt} (en grados).}
+    \label{fig:cal_tilt}
+\end{figure}
 
 \subsection{Modelo Real}
 A partir del procesamiento y ajuste de las curvas experimentales en MATLAB, se identificaron los parámetros característicos de segundo orden para ambos ejes de movimiento. En el Cuadro~\ref{tab:parametros_identificados} se resumen las constantes dinámicas obtenidas, evidenciando un comportamiento subamortiguado ($\zeta \approx 0.50$) muy consistente entre los dos servomotores.
@@ -322,9 +392,91 @@ G(s) = \frac{629.7}{s^2 + 25.22s + 637.4}
 
 Este modelo unificado resulta práctico para realizar análisis preliminares y diseños de control base antes de ajustar o refinar cada eje por separado.
 
-\section{Simulaciones}
+Por otra parte, en el subsistema de fotoresistencias, el procesamiento en MATLAB sobre los datos registrados permitió obtener los parámetros de compensación en oscuridad ($O_1 = 4.18$, $O_2 = 33.03$, $O_3 = 94.38$ y $O_4 = 127.30$ unidades ADC), las lecturas ambientales ($A_1 = 818.41$, $A_2 = 861.18$, $A_3 = 776.87$ y $A_4 = 730.71$ ADC; corregidas: $A_{1,c} = 814.23$, $A_{2,c} = 828.15$, $A_{3,c} = 682.49$ y $A_{4,c} = 603.41$ ADC) y las ganancias individuales de calibración respecto al promedio central $\overline{S}_{c,0} = 815.36$ ADC:
+
+\begin{align}
+U_1(t) &= 0.879711\left[S_1(t) - 4.18\right], &
+U_2(t) &= 0.891191\left[S_2(t) - 33.03\right] \\
+U_3(t) &= 1.081451\left[S_3(t) - 94.38\right], &
+U_4(t) &= 1.224761\left[S_4(t) - 127.30\right]
+\end{align}
+
+A partir de los ajustes por mínimos cuadrados forzados al origen en el rango completo de $\pm 30^\circ$ (con ángulos en grados), se obtuvieron para el eje \emph{Pan} los modelos lineal y cuadrático:
+
+\begin{equation}
+e_x(\Delta\theta_x) = -0.00206250\Delta\theta_x \qquad (R^2 = 0.70298,\; \text{RMSE} = 0.023878)
+\end{equation}
+
+\begin{equation}
+e_x(\Delta\theta_x) = 0.00003881\Delta\theta_x^2 - 0.00206250\Delta\theta_x \qquad (R^2 = 0.92264,\; \text{RMSE} = 0.012186)
+\end{equation}
+
+Mientras que para el eje \emph{Tilt} en el rango de $\pm 30^\circ$ se obtuvieron:
+
+\begin{equation}
+e_y(\Delta\theta_y) = 0.00022632\Delta\theta_y \qquad (R^2 = 0.08705,\; \text{RMSE} = 0.012417)
+\end{equation}
+
+\begin{equation}
+e_y(\Delta\theta_y) = 0.00001271\Delta\theta_y^2 + 0.00022632\Delta\theta_y \qquad (R^2 = 0.35499,\; \text{RMSE} = 0.010437)
+\end{equation}
+
+En el entorno local de pequeña señal de $\pm 10^\circ$, las expresiones lineales identificadas para cada eje (con ángulos en grados) corresponden a:
+
+\begin{equation}
+e_x(\Delta\theta_x) = -0.00113199\Delta\theta_x \qquad (R^2 = 0.19336,\; \text{RMSE} = 0.009708)
+\end{equation}
+
+\begin{equation}
+e_y(\Delta\theta_y) = -0.00029447\Delta\theta_y \qquad (R^2 = 0.54377,\; \text{RMSE} = 0.001764)
+\end{equation}
+
+En el Cuadro~\ref{tab:parametros_ldr} se resumen los parámetros identificados del subsistema de sensado y su acoplamiento experimental.
+
+\begin{table}[H]
+    \centering
+    \caption{Resumen de parámetros experimentales identificados para el subsistema de fotoresistencias.}
+    \label{tab:parametros_ldr}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Parámetro} & \textbf{Valor} & \textbf{Unidad} \\
+        \midrule
+        $O_1, O_2, O_3, O_4$ & $4.18,\; 33.03,\; 94.38,\; 127.30$ & $\text{ADC}$ \\
+        $G_1, G_2, G_3, G_4$ & $0.879711,\; 0.891191,\; 1.081451,\; 1.224761$ & Adim. \\
+        $K_{xx}$ (ganancia estática \emph{Pan}) & $-0.06485802$ & $\text{rad}^{-1}$ \\
+        $K_{yy}$ (ganancia estática \emph{Tilt}) & $-0.01687204$ & $\text{rad}^{-1}$ \\
+        $K_{xy}$ / $K_{yx}$ & $-0.0223$ / $-0.0627$ & $\text{rad}^{-1}$ \\
+        Acoplamiento \emph{Pan} $\rightarrow$ \emph{Tilt} ($C_{x\rightarrow y}$) & $96.656$ & $\%$ \\
+        Acoplamiento \emph{Tilt} $\rightarrow$ \emph{Pan} ($C_{y\rightarrow x}$) & $131.898$ & $\%$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Expresando las ganancias estáticas en radianes mediante la conversión $K_{s,\mathrm{rad}} = K_{s,\mathrm{deg}}(180/\pi)$, se tienen las ganancias locales $K_{xx} \approx -0.06485802\text{ rad}^{-1}$ y $K_{yy} \approx -0.01687204\text{ rad}^{-1}$. Las funciones de transferencia estáticas equivalentes consideradas en el modelado son:
+
+\begin{align}
+\boxed{H_x(s) = \frac{E_x(s)}{\Delta\Theta_x(s)} \approx -0.06485802} \\
+\boxed{H_y(s) = \frac{E_y(s)}{\Delta\Theta_y(s)} \approx -0.01687204}
+\end{align}
+
+Sin embargo, debido a la asimetría y a los elevados acoplamientos cruzados ($C_{x\rightarrow y} = 96.656\%$ y $C_{y\rightarrow x} = 131.898\%$), el modelo local acoplado en radianes queda dado por:
+\begin{equation}
+\begin{bmatrix} e_x(t) \\ e_y(t) \end{bmatrix} \approx
+\begin{bmatrix} -0.0649 & -0.0223 \\ -0.0627 & -0.0169 \end{bmatrix}
+\begin{bmatrix} \Delta\theta_x(t) \\ \Delta\theta_y(t) \end{bmatrix}
+\end{equation}
+
+A partir de los resultados obtenidos durante la caracterización experimental del subsistema de sensado, se determinó que el comportamiento de los sensores presenta características no lineales y asimétricas dentro del rango angular evaluado. Si bien el modelo cuadrático proporcionó un mejor ajuste respecto al modelo lineal en el eje \emph{Pan}, ninguno de los modelos globales logró representar satisfactoriamente el comportamiento de ambos ejes.
+
+Considerando que el objetivo principal del sistema consiste en localizar la fuente luminosa y mantener su orientación hacia esta, se seleccionó un modelo lineal de pequeña señal alrededor del punto de operación correspondiente a una desviación angular de $0^\circ$. En las proximidades de dicho punto, se busca que las desviaciones angulares sean reducidas, por lo que resulta conveniente emplear una aproximación lineal de la respuesta de los sensores.
+
+Para la identificación de este modelo se utilizaron las mediciones correspondientes al intervalo angular comprendido entre $-10^\circ$ y $+10^\circ$, mediante un ajuste por mínimos cuadrados restringido a pasar por el origen. Esta aproximación permite representar el subsistema de sensado mediante ganancias estáticas equivalentes, facilitando su integración con las funciones de transferencia de los actuadores y la aplicación de técnicas clásicas de diseño de sistemas de control.
 
 \section{Diseño e Implementación del Controlador}
+
+
+
+\section{Simulaciones}
 
 \section{Resultados y Análisis}
 
