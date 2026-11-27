@@ -117,14 +117,16 @@ Los servomotores inteligentes, como los actuadores Dynamixel AX-12A, integran un
 \subsection{Representación en Espacio de Estados}
 Para sistemas multivariable o que requieren un análisis avanzado de estabilidad y control moderno, la representación en espacio de estados proporciona un marco matemático riguroso. Un sistema de segundo orden continuo se describe mediante un vector de estados $\mathbf{x}(t) = [\theta(t) \quad \dot{\theta}(t)]^T$, relacionando las derivadas de las variables físicas con las entradas de control y las salidas del sistema a través de las matrices de estado $\mathbf{A}$, $\mathbf{B}$, $\mathbf{C}$ y $\mathbf{D}$ \cite{ogata2010modern}.
 
-\subsection{Control Proporcional Incremental y Banda Muerta}
-En aplicaciones de seguimiento en tiempo real con fuentes móviles, un controlador proporcional (P) incremental resulta ventajoso porque calcula correcciones sobre la posición objetivo actual en lugar de requerir una referencia absoluta constante. Sin embargo, los sistemas físicos discretos sujetos a ruido eléctrico en los sensores sufren de vibraciones o desgaste mecánico por microcorrecciones continuas. Para solucionar esto, se implementa una función de \emph{banda muerta} (dead zone), la cual inhibe la acción de control cuando el error absoluto se encuentra por debajo de un umbral predefinido $\delta$, garantizando la estabilidad en el estado estacionario \cite{astrom2008feedback}.
+\subsection{Control Proporcional Incremental y Aproximación Integral}
+Un controlador proporcional incremental actualiza la referencia angular en cada instante discreto $k$ según la ley $\theta_r[k+1] = \theta_r[k] + K_p e[k]$. En el dominio $Z$, esta acumulación de incrementos corresponde a una función de transferencia $C(z) = K_p/(z-1)$, equivalente a un integrador discreto \cite{astrom2008feedback}.
+
+Mediante la sustitución $z = e^{sT_m}$ y la aproximación de primer orden $z \approx 1 + sT_m$ para un periodo de muestreo $T_m$ pequeño frente a la dinámica del sistema, el controlador se aproxima en tiempo continuo como $C(s) \approx K_I/s$ con $K_I = K_p/T_m$ \cite{franklin2015feedback, astrom2008feedback}. En sistemas multieje acoplados, el análisis de estabilidad debe evaluar la interacción entre canales más allá del comportamiento individual de cada lazo \cite{dorf2016modern, astrom2008feedback}.
 
 \section{Descripción del Sistema Físico}
 El sistema de seguimiento ``El Girasol'' está constituido por un arreglo mecatrónico de dos grados de libertad diseñado para operar de manera autónoma e inalámbrica mediante alimentación por batería. La arquitectura del sistema se divide en tres subsistemas principales:
 
 \begin{itemize}
-    \item \textbf{Subsistema de Percepción Óptica:} Consiste en un arreglo simétrico de cuatro fotoresistencias ($S_1$ a $S_4$) montadas sobre el cabezal sensor y separadas mediante un tabique divisor. Esta configuración permite contrastar la iluminación incidente entre cuadrantes y generar las lecturas analógico-digitales necesarias para estimar la desviación angular respecto a la fuente luminosa en los ejes horizontal (\emph{Pan}) y vertical (\emph{Tilt}).
+    \item \textbf{Subsistema de Percepción Óptica:} Consiste en un arreglo simétrico de cuatro fotoresistencias ($S_1$ a $S_4$) montadas sobre el cabezal sensor. Esta configuración permite contrastar la iluminación incidente entre cuadrantes y generar las lecturas analógico-digitales necesarias para estimar la desviación angular respecto a la fuente luminosa en los ejes horizontal (\emph{Pan}) y vertical (\emph{Tilt}).
     \item \textbf{Subsistema de Actuación (Planta Mecánica):} Está compuesto por dos servomotores inteligentes Dynamixel AX-12A acoplados ortogonalmente. El primer motor controla el giro horizontal (\emph{Pan} o azimut), mientras que el segundo motor gestiona la inclinación vertical (\emph{Tilt} o elevación del cabezal). Estos motores integran un controlador interno de posición y retroalimentación de estado.
     \item \textbf{Subsistema de Control Digital:} Emplea una tarjeta controladora ArbotiX-M, encargada de adquirir las señales de las cuatro fotoresistencias, ejecutar los algoritmos de compensación y control digital, y enviar los comandos de posición objetivo hacia los servomotores de manera síncrona.
 \end{itemize}
@@ -164,14 +166,6 @@ Para facilitar la lectura y comprensión del modelado matemático y la identific
 
 \section{Modelado del Sistema}
 
-\subsection{Definición de Variables y Coordenadas}
-El sistema opera sobre dos ejes angulares principales:
-\begin{itemize}
-    \item $\theta_x$: Ángulo de giro horizontal (\emph{Pan}) en radianes o grados.
-    \item $\theta_y$: Ángulo de inclinación vertical (\emph{Tilt}) en radianes o grados.
-    \item $u_x, u_y$: Comandos de posición objetivo para los ejes horizontal y vertical.
-\end{itemize}
-
 \subsection{Modelado Dinámico de los Servomotores (Planta)}
 Debido a que los servomotores AX-12A integran un controlador interno de posición, cada eje se modela como un sistema de segundo orden equivalente:
 \begin{align}
@@ -184,7 +178,7 @@ En forma matricial para ambos ejes desacoplados:
 \end{equation}
 
 \subsection{Modelo de Percepción (Arreglo de Fotoresistencias)}
-El subsistema de sensado está conformado por cuatro fotoresistencias $S_1$, $S_2$, $S_3$ y $S_4$ separadas por un tabique divisor, cuyas lecturas ADC se agrupan en el vector $\mathbf{S}(t) = [S_1(t)\; S_2(t)\; S_3(t)\; S_4(t)]^T$. Para compensar las diferencias de respuesta en oscuridad, se calcula el promedio de las últimas $N=10$ muestras en oscuridad ($O_i$) y se corrige cada lectura mediante $S_{i,c}(t) = S_i(t) - O_i$.
+El subsistema de sensado está conformado por cuatro fotoresistencias $S_1$, $S_2$, $S_3$ y $S_4$, cuyas lecturas ADC se agrupan en el vector $\mathbf{S}(t) = [S_1(t)\; S_2(t)\; S_3(t)\; S_4(t)]^T$. Para compensar las diferencias de respuesta en oscuridad, se calcula el promedio de las últimas $N=10$ muestras en oscuridad ($O_i$) y se corrige cada lectura mediante $S_{i,c}(t) = S_i(t) - O_i$.
 
 Aunque se evaluó la lectura ambiental promedio $A_i$ y su valor corregido $A_{i,c} = A_i - O_i$, la sustracción directa de luz ambiental produjo valores negativos en ciertas posiciones angulares que afectaban los errores normalizados; por ello, la luz ambiental se emplea únicamente como referencia del entorno y la calibración se realiza en oscuridad y en posición central. A partir del promedio central corregido $\overline{S}_{c,0} = \frac{1}{4}\sum_{i=1}^{4} S_{i,c}(0)$, se define la ganancia individual $G_i = \overline{S}_{c,0}/S_{i,c}(0)$ y la señal compensada de cada sensor:
 \begin{equation}
@@ -210,23 +204,71 @@ Con la desviación angular definida como $\Delta\theta_x(t) = \theta_{\mathrm{re
 \end{bmatrix}
 \end{equation}
 
-\subsection{Modelo del Controlador y Banda Muerta}
-Se propone un controlador proporcional incremental para actualizar la posición objetivo de forma continua:
-\begin{align}
-\theta_{x,r}(k+1) &= \theta_{x,r}(k) + K_{px}e_x^*(k) \\
-\theta_{y,r}(k+1) &= \theta_{y,r}(k) + K_{py}e_y^*(k)
-\end{align}
-incorporando una banda muerta con umbrales $\delta_x$ y $\delta_y$ para evitar oscilaciones innecesarias ante ruido de lectura:
+\subsection{Modelo del Controlador}
+
+Para el sistema de seguimiento de la fuente luminosa se propone utilizar un controlador proporcional incremental para cada eje. Esta selección se fundamenta en que los servomotores Dynamixel AX-12A cuentan con un sistema interno de control de posición, por lo que el controlador externo únicamente debe actualizar la referencia angular de los actuadores en función de los errores proporcionados por el subsistema de sensado.
+
+La ley de control discreta se define mediante:
 \begin{equation}
-e_x^* = \begin{cases} 0 & |e_x| \leq \delta_x \\ e_x & |e_x| > \delta_x \end{cases}
+\boxed{\theta_r[k+1] = \theta_r[k] + K_p e[k]}
+\end{equation}
+donde:
+\begin{itemize}
+    \item $\theta_r[k]$: Referencia angular actual del actuador.
+    \item $\theta_r[k+1]$: Nueva referencia angular del actuador.
+    \item $K_p$: Ganancia del controlador incremental.
+    \item $e[k]$: Error normalizado obtenido del subsistema de sensado.
+    \item $k$: Instante de muestreo discreto.
+\end{itemize}
+
+De esta manera, la referencia angular se modifica progresivamente hasta reducir el error detectado por los sensores.
+
+A partir de la ley de control propuesta, se obtiene:
+\begin{equation}
+\theta_r[k+1] - \theta_r[k] = K_p e[k]
 \end{equation}
 
-\subsection{Modelo en Espacio de Estados}
-Definiendo las variables de estado para el eje horizontal como $x_1 = \theta_x$ y $x_2 = \dot{\theta}_x$:
-\begin{align}
-\dot{\mathbf{x}} &= \begin{bmatrix} 0 & 1 \\ -\omega_{nx}^2 & -2\zeta_x\omega_{nx} \end{bmatrix} \mathbf{x} + \begin{bmatrix} 0 \\ K_x\omega_{nx}^2 \end{bmatrix} u_x \\
-y_x &= \begin{bmatrix} 1 & 0 \end{bmatrix} \mathbf{x}
-\end{align}
+Aplicando la transformada $Z$, considerando condiciones iniciales nulas:
+\begin{equation}
+z\Theta_r(z) - \Theta_r(z) = K_p E(z)
+\end{equation}
+
+Despejando la función de transferencia del controlador:
+\begin{equation}
+\boxed{C(z) = \frac{\Theta_r(z)}{E(z)} = \frac{K_p}{z - 1}}
+\end{equation}
+
+Aunque la actualización de la referencia angular es proporcional al error instantáneo, la acumulación de dichas actualizaciones produce un comportamiento equivalente al de un integrador discreto.
+
+Para obtener una aproximación en el dominio continuo, se considera:
+\begin{equation}
+z = e^{sT_m}
+\end{equation}
+
+Mediante una aproximación de Taylor de primer orden:
+\begin{equation}
+z \approx 1 + sT_m
+\end{equation}
+por lo tanto:
+\begin{equation}
+z - 1 \approx sT_m
+\end{equation}
+
+Sustituyendo en la función de transferencia:
+\begin{equation}
+C(s) \approx \frac{K_p}{T_m s}
+\end{equation}
+
+Se define la ganancia integral equivalente como:
+\begin{equation}
+\boxed{K_I = \frac{K_p}{T_m}}
+\end{equation}
+
+Finalmente, la función de transferencia continua aproximada del controlador corresponde a:
+\begin{equation}
+\boxed{C(s) \approx \frac{K_I}{s}}
+\end{equation}
+donde $T_m$ representa el periodo de muestreo del sistema. Esta aproximación resulta adecuada para el diseño preliminar cuando el periodo de muestreo es suficientemente pequeño respecto a la dinámica del sistema.
 
 \section{Metodología de Identificación Experimental}
 Para validar el modelo teórico, se proponen las siguientes pruebas en el laboratorio:
@@ -286,7 +328,16 @@ Las respuestas temporales obtenidas a partir de los registros experimentales y s
 
 De manera paralela, para caracterizar el subsistema de sensado con las cuatro fotoresistencias, se empleó igualmente código en C++ en Arduino IDE sobre la placa ArbotiX-M, muestreando las lecturas ADC de cada sensor cada $250\text{ ms}$ y guardando las mediciones en archivos CSV para su procesamiento en MATLAB. Las pruebas incluyeron condiciones de oscuridad, iluminación ambiental (sin la fuente luminosa objetivo) y desplazamientos angulares con variaciones de $10^\circ$ en cada dirección (izquierda, derecha, arriba y abajo), evaluando posiciones en el rango de $-30^\circ$ a $+30^\circ$ (por ejemplo, izquierda $10^\circ$, $20^\circ$ y $30^\circ$), con promedios calculados sobre las últimas $N=10$ muestras de cada condición.
 
-En el registro de las fotoresistencias, cada fila incluye el identificador de iteración (\texttt{Iteracion}), el índice de muestra consecutivo (\texttt{N}) tomado cada $250\text{ ms}$ y las lecturas ADC de los cuatro sensores (\texttt{S1}, \texttt{S2}, \texttt{S3} y \texttt{S4}). En el Cuadro~\ref{tab:muestra_ldr_centrada} se muestra un ejemplo de la serie de $20$ muestras obtenida con la fuente LED centrada, donde se aprecia la estabilización progresiva de las lecturas tras el inicio de la captura.
+En el registro de las fotoresistencias, cada fila incluye el identificador de iteración (\texttt{Iteracion}), el índice de muestra consecutivo (\texttt{N}) tomado cada $250\text{ ms}$ y las lecturas ADC de los cuatro sensores (\texttt{S1}, \texttt{S2}, \texttt{S3} y \texttt{S4}). La ubicación de las fotoresistencias se describe a partir de la figura que sigue:
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Figuras/Vista Frontal Sensores.png}
+    \caption{Distribución de los sensores LDR para el modelado.}
+    \label{fig:VistaFrontalSensores}
+\end{figure}
+
+En el Cuadro~\ref{tab:muestra_ldr_centrada} se muestra un ejemplo de la serie de $20$ muestras obtenida con la fuente LED centrada, donde se aprecia la estabilización progresiva de las lecturas tras el inicio de la captura.
 
 \begin{table}[H]
     \centering
@@ -392,7 +443,7 @@ G(s) = \frac{629.7}{s^2 + 25.22s + 637.4}
 
 Este modelo unificado resulta práctico para realizar análisis preliminares y diseños de control base antes de ajustar o refinar cada eje por separado.
 
-Por otra parte, en el subsistema de fotoresistencias, el procesamiento en MATLAB sobre los datos registrados permitió obtener los parámetros de compensación en oscuridad ($O_1 = 4.18$, $O_2 = 33.03$, $O_3 = 94.38$ y $O_4 = 127.30$ unidades ADC), las lecturas ambientales ($A_1 = 818.41$, $A_2 = 861.18$, $A_3 = 776.87$ y $A_4 = 730.71$ ADC; corregidas: $A_{1,c} = 814.23$, $A_{2,c} = 828.15$, $A_{3,c} = 682.49$ y $A_{4,c} = 603.41$ ADC) y las ganancias individuales de calibración respecto al promedio central $\overline{S}_{c,0} = 815.36$ ADC:
+Por otra parte, en el subsistema de fotoresistencias, el procesamiento en MATLAB sobre los datos registrados permitió obtener los parámetros de compensación en oscuridad, las lecturas ambientales y las ganancias individuales de calibración respecto al promedio central $\overline{S}_{c,0} = 815.36$ ADC:
 
 \begin{align}
 U_1(t) &= 0.879711\left[S_1(t) - 4.18\right], &
@@ -474,7 +525,414 @@ Para la identificación de este modelo se utilizaron las mediciones correspondie
 
 \section{Diseño e Implementación del Controlador}
 
+\subsection{Funciones de Transferencia de Lazo Abierto}
+Considerando inicialmente un modelo desacoplado, la función de transferencia de lazo abierto de cada eje está constituida por el controlador, la planta y el subsistema de sensado:
+\begin{equation}
+\boxed{L(s) = C(s)G(s)H(s)}
+\end{equation}
 
+\subsubsection{Eje Pan}
+A partir de los modelos obtenidos anteriormente:
+\begin{align}
+G_x(s) &= \frac{632.5}{s^2 + 25.33s + 641.1} \\
+H_x(s) &= -0.06485802 \\
+C_x(s) &= \frac{K_{I,x}}{s}
+\end{align}
+
+Sustituyendo:
+\begin{equation}
+L_x(s) = \frac{K_{I,x}}{s}\frac{632.5}{s^2 + 25.33s + 641.1}(-0.06485802)
+\end{equation}
+por lo tanto:
+\begin{equation}
+\boxed{L_x(s) = \frac{-41.0227K_{I,x}}{s^3 + 25.33s^2 + 641.1s}}
+\end{equation}
+
+\subsubsection{Eje Tilt}
+De manera análoga:
+\begin{align}
+G_y(s) &= \frac{627.3}{s^2 + 25.1s + 633.8} \\
+H_y(s) &= -0.01687204 \\
+C_y(s) &= \frac{K_{I,y}}{s}
+\end{align}
+
+Sustituyendo:
+\begin{equation}
+L_y(s) = \frac{K_{I,y}}{s}\frac{627.3}{s^2 + 25.1s + 633.8}(-0.01687204)
+\end{equation}
+por lo tanto:
+\begin{equation}
+\boxed{L_y(s) = \frac{-10.5838K_{I,y}}{s^3 + 25.1s^2 + 633.8s}}
+\end{equation}
+
+Se observa que, al incorporar la acción integral del controlador, las funciones de transferencia de lazo abierto resultantes corresponden a sistemas de tercer orden.
+
+\subsection{Corrección del Signo de la Acción de Control}
+Debido a que las ganancias identificadas experimentalmente para el subsistema de sensado presentan valores negativos, resulta necesario invertir el signo de la acción de control, suponiendo que las convenciones angulares de los sensores y actuadores coinciden.
+
+Por consiguiente, se redefinen las funciones de transferencia de los controladores como:
+\begin{align}
+\boxed{C_x(s) = -\frac{K_{I,x}}{s}} \\
+\boxed{C_y(s) = -\frac{K_{I,y}}{s}}
+\end{align}
+donde:
+\begin{equation}
+K_{I,x} > 0, \qquad K_{I,y} > 0
+\end{equation}
+
+Las leyes de control discretas correspondientes quedan expresadas como:
+\begin{align}
+\boxed{\theta_{r,x}[k+1] = \theta_{r,x}[k] - K_{p,x}e_x[k]} \\
+\boxed{\theta_{r,y}[k+1] = \theta_{r,y}[k] - K_{p,y}e_y[k]}
+\end{align}
+
+Con esta modificación, las funciones de transferencia de lazo abierto definitivas para el diseño preliminar desacoplado corresponden a:
+\begin{align}
+\boxed{L_x(s) = \frac{41.0227K_{I,x}}{s^3 + 25.33s^2 + 641.1s}} \\
+\boxed{L_y(s) = \frac{10.5838K_{I,y}}{s^3 + 25.1s^2 + 633.8s}}
+\end{align}
+
+\subsection{Diagrama de Bloques del Sistema de Control Inicial}
+\begin{figure}[H]
+    \centering
+    % Reemplaza con la ruta de tu imagen del diagrama de bloques (Sensor -> Controlador -> Actuador)
+    \includegraphics[width=0.9\linewidth]{Figuras/diagrama_bloques_control.png}
+    \caption{Diagrama de bloques del sistema de control bajo la aproximación desacoplada.}
+    \label{fig:diagrama_bloques_control}
+\end{figure}
+
+\subsection{Resumen de las Funciones de Transferencia}
+En el Cuadro~\ref{tab:resumen_ft} se consolidan las funciones de transferencia de cada bloque para ambos ejes bajo el esquema preliminar desacoplado.
+
+\begin{table}[H]
+    \centering
+    \caption{Resumen de las funciones de transferencia por eje para el diseño preliminar desacoplado.}
+    \label{tab:resumen_ft}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Elemento} & \textbf{Eje Pan} & \textbf{Eje Tilt} \\
+        \midrule
+        Sensor $H(s)$ & $-0.06485802$ & $-0.01687204$ \\[6pt]
+        Planta $G(s)$ & $\dfrac{632.5}{s^2 + 25.33s + 641.1}$ & $\dfrac{627.3}{s^2 + 25.1s + 633.8}$ \\[10pt]
+        Controlador $C(s)$ & $-\dfrac{K_{I,x}}{s}$ & $-\dfrac{K_{I,y}}{s}$ \\[10pt]
+        Lazo abierto $L(s)$ & $\dfrac{41.0227K_{I,x}}{s^3 + 25.33s^2 + 641.1s}$ & $\dfrac{10.5838K_{I,y}}{s^3 + 25.1s^2 + 633.8s}$ \\[10pt]
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Diseño y Evaluación de los Controladores Integrales Individuales}
+A partir de los modelos matemáticos de los actuadores y del modelo de pequeña señal de los sensores, se realizó el diseño de dos controladores integrales independientes para los ejes \emph{Pan} y \emph{Tilt}. Esta estructura incorpora un polo en el origen, permitiendo eliminar idealmente el error en estado estacionario ante referencias angulares constantes, bajo condiciones de estabilidad.
+
+Para determinar las ganancias de los controladores, se aplicó el criterio de estabilidad de Routh-Hurwitz, el lugar geométrico de las raíces y una búsqueda numérica mediante MATLAB. Como especificaciones preliminares de diseño, se establecieron un tiempo de asentamiento máximo de $2\text{ s}$, un sobreimpulso máximo del $10\%$ y un error en estado estacionario idealmente nulo.
+
+Mediante el criterio de Routh-Hurwitz, se determinaron los siguientes intervalos de estabilidad para las ganancias integrales:
+\begin{align}
+0 < K_{I,x} &< 395.8556 \\
+0 < K_{I,y} &< 1503.0834
+\end{align}
+
+Posteriormente, mediante la evaluación de las respuestas transitorias de los sistemas continuos y discretos, considerando un periodo de muestreo de $20\text{ ms}$, se seleccionaron las siguientes ganancias:
+\begin{align}
+K_{I,x} &= 97.74253844 \\
+K_{I,y} &= 373.99448914
+\end{align}
+
+Por consiguiente, las funciones de transferencia de los controladores obtenidos corresponden a:
+\begin{align}
+\boxed{C_x(s) = -\frac{97.74253844}{s}} \\
+\boxed{C_y(s) = -\frac{373.99448914}{s}}
+\end{align}
+
+Los lugares geométricos de las raíces para los lazos individuales de \emph{Pan} y \emph{Tilt} se muestran en las Figuras~\ref{fig:rlocus_pan} y~\ref{fig:rlocus_tilt}, evidenciando la trayectoria de los polos en lazo cerrado conforme varía la ganancia integral.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Lugar de raices - Pan.png}
+    \caption{Lugar geométrico de las raíces para el lazo individual del eje \emph{Pan}.}
+    \label{fig:rlocus_pan}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Lugar de raices - Tilt.png}
+    \caption{Lugar geométrico de las raíces para el lazo individual del eje \emph{Tilt}.}
+    \label{fig:rlocus_tilt}
+\end{figure}
+
+Los resultados de desempeño obtenidos mediante simulación se presentan en el Cuadro~\ref{tab:desempeno_individual}.
+
+\begin{table}[H]
+    \centering
+    \caption{Desempeño simulado de los controladores integrales individuales (\emph{Pan} y \emph{Tilt}).}
+    \label{tab:desempeno_individual}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Parámetro} & \textbf{\emph{Pan}} & \textbf{\emph{Tilt}} \\
+        \midrule
+        Ganancia integral ($K_I$) & $97.74254$ & $373.99449$ \\
+        Ganancia incremental ($K_p$) $[\text{rad/error}]$ & $1.95485$ & $7.47989$ \\
+        Tiempo de asentamiento continuo $[\text{s}]$ & $0.49710$ & $0.49789$ \\
+        Tiempo de asentamiento discreto $[\text{s}]$ & $0.50000$ & $0.50000$ \\
+        Sobreimpulso continuo $[\%]$ & $0$ & $0$ \\
+        Sobreimpulso discreto $[\%]$ & $0.1673$ & $0.1869$ \\
+        Error estacionario ideal $[{}^\circ]$ & $\approx 0$ & $\approx 0$ \\
+        Estabilidad individual & Estable & Estable \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Las respuestas temporales ante una entrada escalón obtenidas para los controladores individuales de \emph{Pan} y \emph{Tilt} se presentan en las Figuras~\ref{fig:escalon_pan} y~\ref{fig:escalon_tilt}, confirmando el cumplimiento de los tiempos de asentamiento y sobreimpulsos especificados.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Escalon - Pan.png}
+    \caption{Respuesta al escalón del controlador integral individual para el eje \emph{Pan}.}
+    \label{fig:escalon_pan}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Escalon - Tilt.png}
+    \caption{Respuesta al escalón del controlador integral individual para el eje \emph{Tilt}.}
+    \label{fig:escalon_tilt}
+\end{figure}
+
+Los resultados evidencian que ambos controladores satisfacen las especificaciones de diseño bajo la hipótesis de desacoplamiento. Por lo tanto, la acción integral resulta suficiente para obtener el desempeño dinámico individual deseado, sin necesidad de incorporar polos o ceros adicionales. No obstante, las advertencias numéricas durante la búsqueda de ganancias impiden garantizar que los valores seleccionados sean óptimos.
+
+\subsection{Evaluación de la Estabilidad del Sistema Acoplado}
+Una vez determinados los controladores individuales, se evaluó la estabilidad del sistema completo considerando las interacciones entre ambos ejes, representadas mediante la matriz de sensibilidad experimental de los sensores:
+\begin{equation}
+\mathbf{J} = \begin{bmatrix} -0.06485802 & -0.0223 \\ -0.0627 & -0.01687204 \end{bmatrix}
+\end{equation}
+
+El análisis del sistema acoplado proporcionó los resultados resumidos en el Cuadro~\ref{tab:estabilidad_acoplada}.
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados de estabilidad del sistema acoplado con controladores individuales.}
+    \label{tab:estabilidad_acoplada}
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Parámetro} & \textbf{Resultado} \\
+        \midrule
+        Determinante de la matriz de sensibilidad & $-0.000303923$ \\
+        Número de condición de la matriz & $29.31481$ \\
+        Máxima parte real de los polos continuos & $+0.789371$ \\
+        Máxima magnitud de los polos discretos & $1.015673$ \\
+        Estabilidad del sistema continuo & Inestable \\
+        Estabilidad del sistema discreto & Inestable \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+En la Figura~\ref{fig:rlocus_acoplado} se ilustra el lugar de las raíces del sistema acoplado, donde se aprecia la inestabilidad inducida por la interacción cruzada entre los ejes \emph{Pan} y \emph{Tilt}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Lugar de raices - Sistema acoplado.png}
+    \caption{Lugar de las raíces del sistema acoplado considerando la matriz de sensibilidad.}
+    \label{fig:rlocus_acoplado}
+\end{figure}
+
+La presencia de un polo en el semiplano derecho para el modelo continuo y de un polo fuera del círculo unitario para el modelo discreto evidencia que el sistema completo es inestable. Esto demuestra que la estabilidad individual de los controladores no garantiza la estabilidad del sistema cuando se consideran las interacciones entre los ejes \emph{Pan} y \emph{Tilt}.
+
+A partir de los resultados obtenidos, se puede decir que la estructura de control integral es adecuada para satisfacer los requerimientos dinámicos individuales. Sin embargo, la implementación de dos controladores independientes no resulta viable para el modelo acoplado de ``El Girasol''.
+
+Debido a que la principal limitación identificada corresponde al acoplamiento del subsistema de sensado y no al desempeño dinámico individual de los actuadores, no se considera necesario incorporar polos o ceros adicionales en esta etapa.
+
+En consecuencia, se propone conservar la acción integral y desarrollar un controlador integral multivariable (MIMO-I) que incorpore una matriz de compensación del acoplamiento entre ambos ejes. Esta estructura permitirá aprovechar las ganancias determinadas durante el diseño inicial y utilizar simultáneamente las señales de error horizontal y vertical para controlar ambos actuadores.
+
+Asimismo, debido al condicionamiento de la matriz de sensibilidad experimental, se evaluarán estrategias de desacoplamiento directo y regularizado, considerando criterios de estabilidad, desempeño transitorio, esfuerzo de control y sensibilidad frente al ruido y las incertidumbres del modelo. La selección definitiva del controlador estará sujeta a los resultados de estas evaluaciones y a su posterior validación experimental.
+
+\subsection{Diseño y Evaluación del Controlador Integral Multivariable}
+Debido a la inestabilidad presentada por los controladores integrales independientes al considerar el acoplamiento entre los ejes \emph{Pan} y \emph{Tilt}, se propuso una estructura de control integral multivariable (MIMO-I). Esta estructura permite utilizar simultáneamente los errores de ambos ejes para determinar las acciones de control correspondientes a cada motor.
+
+A partir del modelo de pequeña señal de los sensores, se obtuvo la matriz de sensibilidad angular:
+\begin{equation}
+\mathbf{J} = \begin{bmatrix} -0.06485802 & -0.0223 \\ -0.0627 & -0.01687204 \end{bmatrix}
+\end{equation}
+
+Esta matriz presenta un determinante de $-0.0003039229$ y un número de condición de $29.3148$, lo cual evidencia una sensibilidad considerable de su inversión ante perturbaciones en las señales de los sensores. Por esta razón, se evaluaron dos estrategias de compensación: inversión directa e inversión regularizada.
+
+\subsubsection{Controlador Multivariable con Inversión Directa}
+La primera estrategia consiste en utilizar la inversa de la matriz de sensibilidad para estimar los errores angulares y compensar el acoplamiento entre los ejes. Para ello, se conservaron las ganancias obtenidas durante el diseño inicial, expresadas mediante la matriz de ganancias integrales angulares:
+\begin{equation}
+\mathbf{K}_a = \begin{bmatrix} 6.3394 & 0 \\ 0 & 6.3100 \end{bmatrix}
+\end{equation}
+
+La función de transferencia matricial del controlador se define como:
+\begin{equation}
+\mathbf{C}_D(s) = \frac{1}{s}\mathbf{K}_a\mathbf{J}^{-1}
+\end{equation}
+
+De esta manera, se obtuvo el controlador:
+\begin{equation}
+\boxed{
+\mathbf{C}_D(s) = \frac{1}{s}\begin{bmatrix} 351.9 & -465.1 \\ -1301.8 & 1346.6 \end{bmatrix}
+}
+\end{equation}
+
+Esta configuración permitió eliminar el acoplamiento nominal entre los ejes y recuperar el comportamiento dinámico obtenido durante el diseño de los controladores individuales. Sin embargo, debido al número de condición de la matriz de sensibilidad, la inversión directa presenta una elevada amplificación potencial del ruido de los sensores.
+
+\subsubsection{Controlador Multivariable con Inversión Regularizada}
+Con el propósito de reducir la sensibilidad al ruido, se implementó una regularización de Tikhonov, cuya matriz de compensación se define como:
+\begin{equation}
+\mathbf{D}_\lambda = \left(\mathbf{J}^T\mathbf{J} + \lambda^2\mathbf{I}\right)^{-1}\mathbf{J}^T
+\end{equation}
+
+Por consiguiente, la función de transferencia matricial del controlador regularizado corresponde a:
+\begin{equation}
+\mathbf{C}_R(s) = \frac{1}{s}\mathbf{K}_a\mathbf{D}_\lambda
+\end{equation}
+
+Mediante MATLAB se evaluaron $150$ valores del parámetro de regularización, de los cuales $150$ proporcionaron estabilidad nominal y $103$ cumplieron todas las especificaciones de diseño. Considerando los resultados de estabilidad ante incertidumbres y la amplificación potencial del ruido, se seleccionó el parámetro:
+\begin{equation}
+\boxed{\lambda = 0.0026473953}
+\end{equation}
+
+Con este valor se obtuvo la matriz de compensación:
+\begin{equation}
+\mathbf{D}_\lambda = \begin{bmatrix} 30.1626 & -46.5805 \\ -124.0024 & 126.4637 \end{bmatrix}
+\end{equation}
+
+Finalmente, el controlador integral multivariable regularizado queda definido como:
+\begin{equation}
+\boxed{
+\mathbf{C}_R(s) = \frac{1}{s}\begin{bmatrix} 191.2124 & -295.2918 \\ -782.4616 & 797.9920 \end{bmatrix}
+}
+\end{equation}
+
+\subsubsection{Comparación de Resultados}
+Se evaluó el comportamiento dinámico de los controladores mediante simulaciones en MATLAB, utilizando entradas escalón de $5^\circ$ y un periodo de muestreo de $20\text{ ms}$. Los resultados obtenidos se presentan en el Cuadro~\ref{tab:comparacion_mimo}.
+
+\begin{table}[H]
+    \centering
+    \caption{Comparación de desempeño para entradas escalón de $5^\circ$ con $T_m = 20\text{ ms}$.}
+    \label{tab:comparacion_mimo}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Parámetro} & \textbf{Directo} & \textbf{Regularizado} \\
+        \midrule
+        Estabilidad continua & Estable & Estable \\
+        Estabilidad discreta & Estable & Estable \\
+        Tiempo de asentamiento \emph{Pan} $[\text{s}]$ & $0.50$ & $0.52$ \\
+        Tiempo de asentamiento \emph{Tilt} $[\text{s}]$ & $0.50$ & $0.84$ \\
+        Sobreimpulso \emph{Pan} $[\%]$ & $0.1673$ & $0.00$ \\
+        Sobreimpulso \emph{Tilt} $[\%]$ & $0.1869$ & $0.00$ \\
+        Acoplamiento \emph{Pan} $\rightarrow$ \emph{Tilt} $[{}^\circ]$ & $0.00$ & $0.4526$ \\
+        Acoplamiento \emph{Tilt} $\rightarrow$ \emph{Pan} $[{}^\circ]$ & $0.00$ & $0.4527$ \\
+        Error final simulado $[{}^\circ]$ & $\approx 0$ & $\approx 0$ \\
+        Máxima parte real de los polos & $-7.9583$ & $-4.3449$ \\
+        Máximo módulo de los polos discretos & $0.8521$ & $0.9073$ \\
+        Norma de la matriz de ganancias & $1960.51$ & $1169.74$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Ambos controladores multivariables permitieron solucionar la inestabilidad del sistema acoplado. Aunque el controlador con inversión directa presentó menores tiempos de asentamiento y un desacoplamiento nominal completo, el controlador regularizado también cumplió las especificaciones establecidas, manteniendo tiempos de asentamiento inferiores a $2\text{ s}$, sobreimpulsos inferiores al $10\%$ y desviaciones angulares cruzadas inferiores a $0.5^\circ$.
+
+La distribución de los polos en tiempo continuo para los controladores independiente, multivariable directo y multivariable regularizado se ilustra en la Figura~\ref{fig:polos_continuos}, evidenciando el desplazamiento hacia el semiplano izquierdo de los polos dominantes al aplicar compensación multivariable.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Figuras/Polos continuos.png}
+    \caption{Ubicación de los polos en tiempo continuo para los controladores independiente, directo y regularizado.}
+    \label{fig:polos_continuos}
+\end{figure}
+
+\subsubsection{Análisis de Sensibilidad al Ruido}
+La regularización permitió reducir la norma de la matriz de compensación respecto a la inversión directa, obteniéndose los siguientes valores:
+\begin{align}
+\|\mathbf{J}^{-1}\|_2 &= 310.571653 \\
+\|\mathbf{D}_\lambda\|_2 &= 185.302784
+\end{align}
+
+La reducción porcentual de la máxima amplificación potencial del ruido se determinó mediante:
+\begin{equation}
+R_\lambda = \left(1 - \frac{\|\mathbf{D}_\lambda\|_2}{\|\mathbf{J}^{-1}\|_2}\right)100\%
+\end{equation}
+\begin{equation}
+\boxed{R_\lambda = 40.3349\%}
+\end{equation}
+
+Este resultado evidencia que la regularización permite disminuir considerablemente la amplificación potencial de las perturbaciones presentes en las señales de los sensores, a cambio de introducir un acoplamiento transitorio reducido entre los ejes. Cabe destacar que este porcentaje corresponde a la reducción de la norma de la matriz de compensación y no directamente a la reducción del ruido en la salida del sistema completo.
+
+\subsubsection{Análisis de Sensibilidad al Ruido}
+La regularización permitió reducir la norma de la matriz de compensación respecto a la inversión directa, obteniéndose los siguientes valores:
+\begin{align}
+\|\mathbf{J}^{-1}\|_2 &= 310.571653 \\
+\|\mathbf{D}_\lambda\|_2 &= 185.302784
+\end{align}
+
+La reducción porcentual de la máxima amplificación potencial del ruido se determinó mediante:
+\begin{equation}
+R_\lambda = \left(1 - \frac{\|\mathbf{D}_\lambda\|_2}{\|\mathbf{J}^{-1}\|_2}\right)100\%
+\end{equation}
+\begin{equation}
+\boxed{R_\lambda = 40.3349\%}
+\end{equation}
+
+Este resultado evidencia que la regularización permite disminuir considerablemente la amplificación potencial de las perturbaciones presentes en las señales de los sensores, a cambio de introducir un acoplamiento transitorio reducido entre los ejes. Cabe destacar que este porcentaje corresponde a la reducción de la norma de la matriz de compensación y no directamente a la reducción del ruido en la salida del sistema completo.
+
+\subsubsection{Análisis de Robustez}
+Para evaluar la sensibilidad de los controladores ante posibles errores en el modelo de los sensores, se realizaron $100$ simulaciones por cada nivel de incertidumbre, introduciendo perturbaciones relativas aleatorias del $1\%$, $5\%$ y $10\%$ en los coeficientes de la matriz de sensibilidad.
+
+\begin{table}[H]
+    \centering
+    \caption{Porcentaje de estabilidad en simulaciones (continuo y discreto) ante incertidumbres en $\mathbf{J}$.}
+    \label{tab:robustez_mimo}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Controlador} & $\pm 1\%$ & $\pm 5\%$ & $\pm 10\%$ \\
+        \midrule
+        Multivariable directo & $100\%$ & $100\%$ & $99\%$ \\
+        Multivariable regularizado & $100\%$ & $100\%$ & $99\%$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Los porcentajes corresponden a la proporción de simulaciones en las cuales se mantuvo la estabilidad tanto en tiempo continuo como discreto.
+
+Ambos controladores multivariables presentaron el mismo porcentaje de estabilidad ante las incertidumbres evaluadas. Sin embargo, el controlador regularizado consiguió estos resultados utilizando una matriz de ganancias de menor norma. Las incertidumbres consideradas fueron hipotéticas, por lo que estos resultados constituyen una evaluación estadística y no una garantía formal de estabilidad robusta.
+
+\subsubsection{Modelo Discreto del Controlador Seleccionado}
+Considerando un periodo de muestreo de $T_m = 0.02\text{ s}$, se obtuvo la función de transferencia matricial discreta:
+\begin{equation}
+\boxed{
+\mathbf{C}_R(z) = \frac{1}{z - 1}\begin{bmatrix} 3.8242 & -5.9058 \\ -15.6492 & 15.9598 \end{bmatrix}
+}
+\end{equation}
+
+La ley de control incremental se expresa como:
+\begin{equation}
+\boldsymbol{\theta}_r[k+1] = \boldsymbol{\theta}_r[k] + \mathbf{K}_D\mathbf{e}[k]
+\end{equation}
+
+Expresando las posiciones angulares en grados, las ecuaciones correspondientes a cada motor son:
+\begin{align}
+\boxed{
+\begin{aligned}
+\theta_{x,r}[k+1] ={} & \theta_{x,r}[k] \\
+& + 219.1133e_x[k] \\
+& - 338.3795e_y[k]
+\end{aligned}
+} \\
+\boxed{
+\begin{aligned}
+\theta_{y,r}[k+1] ={} & \theta_{y,r}[k] \\
+& - 896.6350e_x[k] \\
+& + 914.4314e_y[k]
+\end{aligned}
+}
+\end{align}
+
+Estas ecuaciones constituyen la base para la implementación digital del controlador en el ArbotiX-M.
+
+A partir de los resultados obtenidos, se seleccionó el controlador integral multivariable regularizado como candidato para la implementación del sistema de seguimiento. Esta configuración permitió solucionar la inestabilidad ocasionada por el acoplamiento entre los ejes, manteniendo tiempos de asentamiento inferiores a $0.85\text{ s}$, sobreimpulso nulo y un error final prácticamente nulo bajo condiciones nominales de simulación.
+
+Adicionalmente, la regularización permitió reducir en un $40.33\%$ la máxima amplificación potencial de las perturbaciones sensoriales mediante la matriz de compensación, conservando el cumplimiento de las especificaciones de diseño. Por lo tanto, no se consideró necesario incorporar acciones proporcionales o derivativas adicionales en esta etapa.
+
+La selección representa un compromiso entre estabilidad, velocidad de respuesta, desacoplamiento y sensibilidad al ruido. No obstante, su validación definitiva queda sujeta a la incorporación de la banda muerta, la saturación de los actuadores, la cuantización angular, la evaluación del ruido en lazo cerrado y la posterior implementación experimental del sistema.
 
 \section{Simulaciones}
 
