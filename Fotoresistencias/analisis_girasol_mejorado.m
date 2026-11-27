@@ -376,39 +376,113 @@ fprintf('No extrapolar fuera del rango medido.\n');
 
 %% ---------------- GRAFICAS ----------------
 if MOSTRAR_GRAFICAS
-fig1=figure('Name','Calibracion angular Pan','Color','w');
-scatter(thetaPan,errorPan,65,'filled'); hold on; grid on;
-xx=linspace(min(thetaPan),max(thetaPan),200);
-plot(xx,polyval(pPan1,xx),'LineWidth',1.6);
-plot(xx,polyval(pPan2,xx),'--','LineWidth',1.6);
-xl = linspace(-RANGO_LOCAL,RANGO_LOCAL,100);
-plot(xl,polyval(pPanLocal,xl),':','LineWidth',2);
-xlabel('Angulo Pan (grados)'); ylabel('Error horizontal e_x');
-title('Calibracion angular del eje Pan');
-legend('Mediciones','Ajuste lineal','Ajuste cuadratico','Lineal local','Location','best');
 
-fig2=figure('Name','Calibracion angular Tilt','Color','w');
-scatter(thetaTilt,errorTilt,65,'filled'); hold on; grid on;
-xx=linspace(min(thetaTilt),max(thetaTilt),200);
-plot(xx,polyval(pTilt1,xx),'LineWidth',1.6);
-plot(xx,polyval(pTilt2,xx),'--','LineWidth',1.6);
-xl = linspace(-RANGO_LOCAL,RANGO_LOCAL,100);
-plot(xl,polyval(pTiltLocal,xl),':','LineWidth',2);
-xlabel('Angulo Tilt (grados)'); ylabel('Error vertical e_y');
-title('Calibracion angular del eje Tilt');
-legend('Mediciones','Ajuste lineal','Ajuste cuadratico','Lineal local','Location','best');
+    % Grafica 1: Calibracion angular Pan
+    fig1 = figure('Name','Calibracion angular Pan','Color','k');
 
-% Promedios del centro y de cada condicion angular.
-etiquetas = ["OSCURIDAD"; "AMBIENTE"; nombres(:)];
-mediasGraf = [Sosc; Samb; mediasRaw];
-fig3=figure('Name','Promedios por condicion','Color','w');
-plot(1:numel(etiquetas),mediasGraf,'o-','LineWidth',1.2);
-grid on;
-xticks(1:numel(etiquetas)); xticklabels(etiquetas); xtickangle(45);
-ylabel('Lectura ADC original'); title('Promedio de las muestras finales por condicion');
-legend('S1','S2','S3','S4','Location','best');
+    scatter(thetaPan,errorPan,65,'filled');
+    hold on;
+    grid on;
 
-    figure(fig1); figure(fig2); figure(fig3);
+    xx = linspace(min(thetaPan),max(thetaPan),200);
+    plot(xx,polyval(pPan1,xx),'LineWidth',1.6);
+    plot(xx,polyval(pPan2,xx),'--','LineWidth',1.6);
+
+    xl = linspace(-RANGO_LOCAL,RANGO_LOCAL,100);
+    plot(xl,polyval(pPanLocal,xl),':','LineWidth',2);
+
+    xlabel('Angulo Pan (grados)');
+    ylabel('Error horizontal e_x');
+    title('Calibracion angular del eje Pan');
+
+    legend('Mediciones','Ajuste lineal', ...
+        'Ajuste cuadratico','Lineal local', ...
+        'Location','best');
+
+
+    % Grafica 2: Calibracion angular Tilt
+    fig2 = figure('Name','Calibracion angular Tilt','Color','k');
+
+    scatter(thetaTilt,errorTilt,65,'filled');
+    hold on;
+    grid on;
+
+    xx = linspace(min(thetaTilt),max(thetaTilt),200);
+    plot(xx,polyval(pTilt1,xx),'LineWidth',1.6);
+    plot(xx,polyval(pTilt2,xx),'--','LineWidth',1.6);
+
+    xl = linspace(-RANGO_LOCAL,RANGO_LOCAL,100);
+    plot(xl,polyval(pTiltLocal,xl),':','LineWidth',2);
+
+    xlabel('Angulo Tilt (grados)');
+    ylabel('Error vertical e_y');
+    title('Calibracion angular del eje Tilt');
+
+    legend('Mediciones','Ajuste lineal', ...
+        'Ajuste cuadratico','Lineal local', ...
+        'Location','best');
+
+
+    % Grafica 3: Promedios por condicion
+    etiquetas = ["OSCURIDAD"; "AMBIENTE"; nombres(:)];
+    mediasGraf = [Sosc; Samb; mediasRaw];
+
+    fig3 = figure('Name','Promedios por condicion','Color','k');
+
+    plot(1:numel(etiquetas),mediasGraf,'o-','LineWidth',1.2);
+    grid on;
+
+    xticks(1:numel(etiquetas));
+    xticklabels(etiquetas);
+    xtickangle(45);
+
+    ylabel('Lectura ADC original');
+    title('Promedio de las muestras finales por condicion');
+
+    legend('S1','S2','S3','S4','Location','best');
+
+
+    % Configuracion visual de todas las graficas
+    for fig = [fig1, fig2, fig3]
+
+        % Fondo de la figura
+        set(fig,'Color','k','InvertHardcopy','off');
+
+        % Fondo y colores de los ejes
+        ax = findall(fig,'Type','axes');
+
+        set(ax, ...
+            'Color','k', ...
+            'XColor','w', ...
+            'YColor','w', ...
+            'ZColor','w', ...
+            'GridColor',[0.65 0.65 0.65], ...
+            'GridAlpha',0.25, ...
+            'MinorGridColor',[0.65 0.65 0.65]);
+
+        % Color de los titulos y etiquetas
+        for a = ax(:).'
+
+            set([a.Title,a.XLabel,a.YLabel,a.ZLabel], ...
+                'Color','w');
+
+        end
+
+        % Fondo negro y texto blanco de las leyendas
+        lg = findall(fig,'Type','legend');
+
+        set(lg, ...
+            'Color','k', ...
+            'TextColor','w', ...
+            'EdgeColor',[0.65 0.65 0.65]);
+
+    end
+
+    % Mostrar las tres figuras
+    figure(fig1);
+    figure(fig2);
+    figure(fig3);
+
 end
 
 %% ---------------- FUNCION LOCAL ----------------
